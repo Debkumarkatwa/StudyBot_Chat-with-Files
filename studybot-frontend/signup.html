@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
+
+  <!-- Set theme BEFORE stylesheets load, to avoid a flash of the wrong theme -->
+  <script>
+    (function () {
+      const saved = localStorage.getItem("studybot-theme");
+      const theme = saved || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+      document.documentElement.setAttribute("data-theme", theme);
+    })();
+  </script>
+
+  <title>Sign Up — StudyBot</title>
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/auth.css" />
+</head>
+<body>
+
+  <header class="topnav">
+    <div class="topnav-left">
+      <a href="landing.html" class="logo">StudyBot</a>
+    </div>
+    <div class="topnav-right">
+      <button class="icon-btn" id="themeToggle" aria-label="Toggle light/dark theme" aria-pressed="false">🌙</button>
+    </div>
+  </header>
+
+  <div class="auth-wrapper">
+    <div class="auth-card">
+      <h1>Create your account</h1>
+      <p class="auth-subtitle">Start chatting with your study material in minutes.</p>
+
+      <div class="form-error hidden" id="signupError" role="alert"></div>
+
+      <form id="signupForm" novalidate>
+        <div class="field-group">
+          <label for="fullName">Full Name</label>
+          <input
+            type="text"
+            id="fullName"
+            name="fullName"
+            placeholder="Jane Doe"
+            minlength="3"
+            maxlength="15"
+            required
+            aria-describedby="fullNameError fullNameCount"
+          />
+          <div class="field-meta">
+            <span class="field-error" id="fullNameError"></span>
+            <span class="char-count" id="fullNameCount">0 / 15</span>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label for="signupEmail">Email</label>
+          <input
+            type="email"
+            id="signupEmail"
+            name="email"
+            placeholder="you@example.com"
+            required
+            aria-describedby="signupEmailError"
+          />
+          <span class="field-error" id="signupEmailError"></span>
+        </div>
+
+        <div class="field-group">
+          <label for="signupPassword">Password</label>
+          <div class="password-field">
+            <input
+              type="password"
+              id="signupPassword"
+              name="password"
+              placeholder="••••••••"
+              required
+              aria-describedby="passwordStrengthText"
+            />
+            <button type="button" class="password-toggle" id="toggleSignupPassword" aria-label="Show password">👁</button>
+          </div>
+          <div class="password-strength" id="passwordStrength">
+            <div class="strength-bars">
+              <span class="bar" data-bar="1"></span>
+              <span class="bar" data-bar="2"></span>
+              <span class="bar" data-bar="3"></span>
+            </div>
+            <span class="strength-text" id="passwordStrengthText">Min 8 characters, at least 1 letter &amp; 1 number</span>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label for="confirmPassword">Confirm Password</label>
+          <div class="password-field">
+            <input
+              type="password"
+              id="confirmPassword"
+              name="confirmPassword"
+              placeholder="••••••••"
+              required
+              aria-describedby="confirmPasswordError"
+            />
+            <button type="button" class="password-toggle" id="toggleConfirmPassword" aria-label="Show password">👁</button>
+          </div>
+          <span class="field-error" id="confirmPasswordError"></span>
+        </div>
+
+        <label class="checkbox-row">
+          <input type="checkbox" id="agreeTerms" required />
+          <span>I agree to the <a href="terms.html" target="_blank">Terms of Service</a> and <a href="privacy.html" target="_blank">Privacy Policy</a></span>
+        </label>
+
+        <button type="submit" class="btn-primary full-width" id="signupSubmitBtn">Create Account</button>
+      </form>
+
+      <p class="auth-switch">
+        Already have an account? <a href="login.html">Log In</a>
+      </p>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/theme.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+</body>
+</html>

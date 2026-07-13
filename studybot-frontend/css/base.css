@@ -1,0 +1,63 @@
+:root {
+  --color-bg: #0f1115;
+  --color-surface: #171a21;
+  --color-surface-alt: #1f232c;
+  --color-border: #2a2f3a;
+  --color-text: #e8eaed;
+  --color-text-dim: #9aa0ab;
+  --color-primary: #4f7cff;
+  --color-primary-hover: #6f93ff;
+
+  --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.35);
+  --shadow-hero: 0 20px 50px rgba(0, 0, 0, 0.4);
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+
+  --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* ===== Light theme overrides ===== */
+[data-theme="light"] {
+  --color-bg: #e9ebef;
+  --color-surface: #f5f6f8;
+  --color-surface-alt: #e4e6eb;
+  --color-border: #d6d9e0;
+  --color-text: #1a1d23;
+  --color-text-dim: #5c6270;
+  --color-primary: #3b63e0;
+  --color-primary-hover: #2c4fc4;
+
+  --shadow-card: 0 4px 16px rgba(30, 34, 44, 0.1);
+  --shadow-hero: 0 20px 50px rgba(30, 34, 44, 0.14);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-main);
+  background: var(--color-bg);
+  color: var(--color-text);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* Visible focus ring for keyboard users, without adding an outline on mouse clicks */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}

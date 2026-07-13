@@ -1,0 +1,179 @@
+/* ===== Logo & generic buttons ===== */
+.logo {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  color: var(--color-text);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.icon-btn:hover {
+  background: var(--color-surface-alt);
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 9px 18px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.btn-primary:hover {
+  background: var(--color-primary-hover);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-text-dim);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 16px;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.btn-ghost:hover {
+  color: var(--color-text);
+  border-color: var(--color-text-dim);
+}
+
+.btn-lg {
+  padding: 13px 26px;
+  font-size: 15px;
+}
+
+/* ===== Top navbar ===== */
+.topnav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--color-border);
+  position: sticky;
+  top: 0;
+  background: var(--color-bg);
+  z-index: 50;
+}
+
+.topnav-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.topnav-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+@media (max-width: 480px) {
+  .topnav {
+    padding: 12px 16px;
+  }
+  .logo {
+    font-size: 17px;
+  }
+  .btn-ghost,
+  .btn-primary {
+    padding: 7px 12px;
+    font-size: 13px;
+  }
+}
+
+/* ===== Profile dropdown ===== */
+.profile-menu-wrapper {
+  position: relative;
+}
+
+.profile-icon-btn {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-size: 18px;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.profile-dropdown {
+  position: absolute;
+  right: 0;
+  top: 46px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  min-width: 160px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-card);
+}
+
+.profile-dropdown a,
+.profile-dropdown button {
+  background: none;
+  border: none;
+  text-align: left;
+  padding: 9px 10px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font-size: 14px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.profile-dropdown a:hover,
+.profile-dropdown button:hover {
+  background: var(--color-surface-alt);
+}
+
+/* ===== Floating chat button ===== */
+.fab-chat-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  background: var(--color-primary);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  box-shadow: 0 6px 20px rgba(79, 124, 255, 0.4);
+  z-index: 100;
+}
+
+.fab-chat-btn:hover {
+  background: var(--color-primary-hover);
+}
+
+/* ===== Dev-only toggle (delete once real auth exists) ===== */
+.dev-toggle {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  background: #402020;
+  color: #ffb4b4;
+  border: 1px dashed #a04040;
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  z-index: 100;
+}

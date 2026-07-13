@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
+  <script>
+    (function () {
+      const saved = localStorage.getItem("studybot-theme");
+      const theme = saved || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+      document.documentElement.setAttribute("data-theme", theme);
+    })();
+  </script>
+  <title>Terms of Service — StudyBot</title>
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/legal.css" />
+</head>
+<body>
+  <header class="topnav">
+    <div class="topnav-left">
+      <a href="landing.html" class="logo">StudyBot</a>
+    </div>
+    <div class="topnav-right">
+      <button class="icon-btn" id="themeToggle" aria-label="Toggle light/dark theme" aria-pressed="false">🌙</button>
+    </div>
+  </header>
+
+  <main class="legal-page">
+    <h1>Terms of Service</h1>
+    <p class="legal-placeholder-note">Placeholder — real terms will be added before public launch.</p>
+    <p>By creating an account, you agree to use StudyBot for lawful, personal study purposes only. Full terms will be published here prior to launch.</p>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/theme.js"></script>
+</body>
+</html>

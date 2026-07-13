@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Set theme BEFORE stylesheets load, to avoid a flash of the wrong theme -->
+  <script>
+    (function () {
+      const saved = localStorage.getItem("studybot-theme");
+      const theme = saved || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+      document.documentElement.setAttribute("data-theme", theme);
+    })();
+  </script>
+
+  <title>StudyBot — Chat with Your Files</title>
+  <meta name="description" content="StudyBot reads your uploaded notes, PDFs, and slides, then answers your questions instantly. No more scrolling through 40-page PDFs before an exam." />
+
+  <!-- Open Graph (link preview when shared) -->
+  <meta property="og:title" content="StudyBot — Chat with Your Files" />
+  <meta property="og:description" content="Upload your study material once, then chat your way through revision — fast, focused, and grounded in what you actually studied." />
+  <meta property="og:type" content="website" />
+
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/landing.css" />
+</head>
+<body>
+
+  <!-- ============ TOP NAVBAR ============ -->
+  <header class="topnav">
+    <div class="topnav-left">
+      <span class="logo">StudyBot</span>
+    </div>
+
+    <!-- Logged OUT state -->
+    <div class="topnav-right" id="navLoggedOut">
+      <button class="icon-btn" id="themeToggle" aria-label="Toggle light/dark theme">🌙</button>
+      <a href="login.html" class="btn-ghost">Log In</a>
+      <a href="signup.html" class="btn-primary">Sign Up</a>
+    </div>
+
+    <!-- Logged IN state (hidden by default) -->
+    <div class="topnav-right hidden" id="navLoggedIn">
+      <button class="icon-btn" id="themeToggleLoggedIn" aria-label="Toggle light/dark theme">🌙</button>
+      <div class="profile-menu-wrapper">
+        <button class="profile-icon-btn" id="profileIconBtn" aria-label="Open profile menu">👤</button>
+        <div class="profile-dropdown hidden" id="profileDropdown">
+          <a href="profile.html">View Profile</a>
+          <button id="logoutBtn">Logout</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- DEV-ONLY: remove once real auth exists -->
+  <button id="devAuthToggle" class="dev-toggle">🔧 Toggle logged in/out (dev)</button>
+
+  <!-- ============ HERO SECTION ============ -->
+  <main>
+    <section class="hero">
+      <h1>Chat with your notes, PDFs, and slides.</h1>
+      <p class="hero-subtitle">
+        StudyBot reads your uploaded study material and answers your questions instantly —
+        no more scrolling through 40-page PDFs before an exam.
+      </p>
+      <div class="hero-actions">
+        <a href="signup.html" class="btn-primary btn-lg">Get Started Free</a>
+        <a href="#how-it-works" class="btn-ghost btn-lg">See How It Works</a>
+      </div>
+    </section>
+
+    <!-- ============ HERO DEMO (visual proof it works) ============ -->
+    <section class="hero-demo-wrapper" aria-label="Example StudyBot conversation">
+      <div class="hero-demo">
+        <div class="hero-demo-header">
+          <span class="hero-demo-dot" aria-hidden="true"></span>
+          <span class="hero-demo-dot" aria-hidden="true"></span>
+          <span class="hero-demo-dot" aria-hidden="true"></span>
+          <span class="hero-demo-title">StudyBot — Chapter 4 Notes.pdf</span>
+        </div>
+        <div class="hero-demo-body">
+          <div class="demo-message user">
+            <p>What's the difference between mitosis and meiosis?</p>
+          </div>
+          <div class="demo-message bot">
+            <p>Mitosis produces 2 identical diploid cells for growth/repair. Meiosis produces 4 genetically varied haploid cells for reproduction.</p>
+            <span class="source-tag">📄 From Chapter 4 Notes.pdf, page 12</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ FEATURES ============ -->
+    <section class="features" id="how-it-works">
+      <div class="feature-card">
+        <span class="feature-icon" aria-hidden="true">📁</span>
+        <h3>Upload Anything</h3>
+        <p>PDFs, PPTs, Word docs, and text files — all in one place.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon" aria-hidden="true">🤖</span>
+        <h3>Ask, Don't Search</h3>
+        <p>Instead of "Ctrl+F: mitochondria", just ask "explain mitochondria like I'm cramming tonight."</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon" aria-hidden="true">🎯</span>
+        <h3>Grounded Answers</h3>
+        <p>Every answer is sourced from your own documents — no guessing.</p>
+      </div>
+    </section>
+
+    <!-- ============ ABOUT PROJECT ============ -->
+    <section class="about">
+      <h2>Why StudyBot?</h2>
+      <p>
+        Built for students drowning in lecture slides and scattered notes. Upload your
+        material once, then chat your way through revision — fast, focused, and grounded
+        in what you actually studied.
+      </p>
+    </section>
+  </main>
+
+  <!-- ============ FLOATING CHAT BUTTON (bottom-right) ============ -->
+  <a href="chat.html" class="fab-chat-btn" aria-label="Go to chat">💬</a>
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="site-footer">
+    <span class="logo">StudyBot</span>
+    <p>Built for students who'd rather ask than scroll.</p>
+    <div class="footer-links">
+      <a href="#how-it-works">How It Works</a>
+      <a href="login.html">Log In</a>
+      <a href="signup.html">Sign Up</a>
+    </div>
+    <p class="footer-copy">&copy; 2026 StudyBot. All rights reserved.</p>
+  </footer>
+
+  <script src="js/config.js"></script>
+  <script src="js/theme.js"></script>
+  <script src="js/landing.js"></script>
+</body>
+</html>
