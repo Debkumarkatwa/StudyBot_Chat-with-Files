@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
+
+  <script>
+    (function () {
+      const saved = localStorage.getItem("studybot-theme");
+      const theme = saved || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+      document.documentElement.setAttribute("data-theme", theme);
+    })();
+  </script>
+
+  <title>Chat — StudyBot</title>
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/chat.css" />
+</head>
+<body>
+
+  <!-- ============ SLIDING APP SIDEBAR ============ -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <aside class="app-sidebar" id="appSidebar">
+    <div class="app-sidebar-header">
+      <span class="logo">StudyBot</span>
+      <button class="icon-btn" id="closeSidebar" aria-label="Close sidebar">✕</button>
+    </div>
+    <nav class="app-sidebar-nav">
+      <a href="landing.html" class="sidebar-link">🏠 Home</a>
+      <a href="chat.html" class="sidebar-link active">💬 Chat</a>
+      <a href="documents.html" class="sidebar-link">📄 Documents</a>
+      <a href="profile.html" class="sidebar-link">👤 Profile</a>
+      <a href="settings.html" class="sidebar-link">⚙️ Settings</a>
+    </nav>
+    <div class="app-sidebar-footer">
+      <button class="sidebar-link logout-link" id="sidebarLogoutBtn">🚪 Logout</button>
+    </div>
+  </aside>
+
+  <!-- ============ TOP NAVBAR ============ -->
+  <header class="topnav">
+    <div class="topnav-left">
+      <button class="icon-btn" id="openSidebar" aria-label="Open sidebar">☰</button>
+      <span class="logo">StudyBot</span>
+    </div>
+    <div class="topnav-right">
+      <button class="icon-btn" id="themeToggle" aria-label="Toggle light/dark theme" aria-pressed="false">🌙</button>
+      <div class="profile-menu-wrapper">
+        <button class="profile-icon-btn" id="profileIconBtn" aria-label="Open profile menu">👤</button>
+        <div class="profile-dropdown hidden" id="profileDropdown">
+          <a href="profile.html">View Profile</a>
+          <button id="logoutBtn">Logout</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- DEV-ONLY: remove once Documents page + real data exist -->
+  <button id="devDocToggle" class="dev-toggle">🔧 Toggle has-docs (dev)</button>
+
+  <main class="chat-page">
+
+    <!-- ============ EMPTY STATE (no documents uploaded) ============ -->
+    <div class="empty-state hidden" id="emptyState">
+      <span class="empty-state-icon" aria-hidden="true">📂</span>
+      <h2>No documents yet</h2>
+      <p>Upload your notes, PDFs, or slides to start chatting with them.</p>
+      <a href="documents.html" class="btn-primary btn-lg">+ Add Document</a>
+    </div>
+
+    <!-- ============ CHAT CONTAINER ============ -->
+    <div class="chat-container" id="chatContainer">
+      <div class="chat-messages" id="chatMessages">
+        <div class="message bot">
+          <p>Hey! Ask me anything about your uploaded documents.</p>
+        </div>
+      </div>
+
+      <form class="chat-input-bar" id="chatForm">
+        <div class="input-bar-actions">
+          <a href="documents.html" class="icon-action-btn" data-tooltip="Add Document" aria-label="Add Document">+</a>
+
+          <div class="doc-selector-wrapper">
+            <button
+              type="button"
+              class="icon-action-btn"
+              id="docSelectorBtn"
+              data-tooltip="Doc Selector: All Documents"
+              aria-label="Select which documents to search"
+            >
+              📄<span class="filter-dot" id="docFilterDot" hidden></span>
+            </button>
+            <div class="doc-selector-dropdown hidden" id="docSelectorDropdown">
+              <label class="doc-checkbox-row">
+                <input type="checkbox" id="docAll" checked />
+                <span>All Documents</span>
+              </label>
+              <hr />
+              <div id="docCheckboxList">
+                <!-- populated by chat.js from mock document list -->
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            class="icon-action-btn"
+            id="hybridToggleBtn"
+            data-tooltip="Hybrid Mode: Off"
+            aria-label="Toggle hybrid mode"
+            aria-pressed="false"
+          >🌐</button>
+        </div>
+
+        <textarea
+          id="chatInput"
+          rows="1"
+          placeholder="Ask something about your documents... (Shift+Enter for new line)"
+        ></textarea>
+        <button type="submit" class="btn-primary" id="sendBtn" aria-label="Send message">Send</button>
+      </form>
+    </div>
+
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/theme.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/chat.js"></script>
+</body>
+</html>

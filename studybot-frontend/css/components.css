@@ -141,6 +141,87 @@
   background: var(--color-surface-alt);
 }
 
+/* ===== Sliding sidebar (app shell) ===== */
+.app-sidebar {
+  position: fixed;
+  top: 0;
+  left: -280px;
+  width: 280px;
+  height: 100vh;
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  z-index: 200;
+  transition: left 0.2s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-sidebar.open {
+  left: 0;
+}
+
+.app-sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.app-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  gap: 2px;
+  flex: 1;
+}
+
+.app-sidebar-footer {
+  padding: 10px;
+  border-top: 1px solid var(--color-border);
+}
+
+.sidebar-link {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-dim);
+  font-size: 14px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  display: block;
+  width: 100%;
+}
+
+.sidebar-link:hover {
+  background: var(--color-surface-alt);
+  color: var(--color-text);
+}
+
+.sidebar-link.active {
+  background: var(--color-surface-alt);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.logout-link:hover {
+  color: #e05555;
+}
+
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 150;
+  display: none;
+}
+
+.sidebar-overlay.visible {
+  display: block;
+}
+
 /* ===== Floating chat button ===== */
 .fab-chat-btn {
   position: fixed;
