@@ -45,6 +45,27 @@ const API = {
     });
   },
 
+  async uploadFile(file) {
+    // TODO: replace with real call once backend exists
+    // const formData = new FormData();
+    // formData.append("file", file);
+    // const res = await fetch(`${CONFIG.API_BASE_URL}/documents/upload`, {
+    //   method: "POST",
+    //   body: formData,
+    // });
+    // return res.json(); // expect { success, id }
+
+    // --- MOCK ---
+    return new Promise((resolve) => {
+      setTimeout(() => resolve({ success: true, id: `mock-${Date.now()}` }), 500);
+    });
+  },
+
+  async deleteFile(fileId) {
+    // TODO: DELETE /documents/:id
+    return new Promise((resolve) => setTimeout(() => resolve({ success: true }), 300));
+  },
+
   async signup(fullName, email, password) {
     // TODO: replace with real call once backend exists
     // const res = await fetch(`${CONFIG.API_BASE_URL}/auth/signup`, {

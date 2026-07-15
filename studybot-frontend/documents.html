@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
+
+  <script>
+    (function () {
+      const saved = localStorage.getItem("studybot-theme");
+      const theme = saved || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+      document.documentElement.setAttribute("data-theme", theme);
+    })();
+  </script>
+
+  <title>Documents — StudyBot</title>
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/documents.css" />
+</head>
+<body>
+
+  <!-- ============ SLIDING APP SIDEBAR ============ -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <aside class="app-sidebar" id="appSidebar">
+    <div class="app-sidebar-header">
+      <span class="logo">StudyBot</span>
+      <button class="icon-btn" id="closeSidebar" aria-label="Close sidebar">✕</button>
+    </div>
+    <nav class="app-sidebar-nav">
+      <a href="landing.html" class="sidebar-link">🏠 Home</a>
+      <a href="chat.html" class="sidebar-link">💬 Chat</a>
+      <a href="documents.html" class="sidebar-link active">📄 Documents</a>
+      <a href="profile.html" class="sidebar-link">👤 Profile</a>
+      <a href="settings.html" class="sidebar-link">⚙️ Settings</a>
+    </nav>
+    <div class="app-sidebar-footer">
+      <button class="sidebar-link logout-link" id="sidebarLogoutBtn">🚪 Logout</button>
+    </div>
+  </aside>
+
+  <!-- ============ TOP NAVBAR ============ -->
+  <header class="topnav">
+    <div class="topnav-left">
+      <button class="icon-btn" id="openSidebar" aria-label="Open sidebar">☰</button>
+      <span class="logo">StudyBot</span>
+    </div>
+    <div class="topnav-right">
+      <button class="icon-btn" id="themeToggle" aria-label="Toggle light/dark theme" aria-pressed="false">🌙</button>
+      <div class="profile-menu-wrapper">
+        <button class="profile-icon-btn" id="profileIconBtn" aria-label="Open profile menu">👤</button>
+        <div class="profile-dropdown hidden" id="profileDropdown">
+          <a href="profile.html">View Profile</a>
+          <button id="logoutBtn">Logout</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="documents-page">
+    <div class="documents-header">
+      <h1>Your Documents</h1>
+      <p id="uploadLimitText">You can upload up to 3 documents on the free plan. <a href="#" id="upgradeLink">Need more? Upgrade your plan.</a></p>
+    </div>
+
+    <!-- ============ UPLOAD ZONE ============ -->
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" id="fileInput" accept=".pdf,.docx,.pptx,.txt" hidden />
+      <span class="upload-icon" aria-hidden="true">📁</span>
+      <p>Drag files here or <span class="link" id="browseLink">browse</span></p>
+      <p class="hint">PDF, DOCX, PPTX, TXT</p>
+    </div>
+
+    <!-- ============ FILE LIST ============ -->
+    <div class="file-list-section">
+      <h2>Uploaded Files</h2>
+      <p class="empty-file-list hidden" id="emptyFileList">No documents uploaded yet — add one above to get started.</p>
+      <ul class="file-list" id="fileList"></ul>
+    </div>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/theme.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/documents.js"></script>
+</body>
+</html>
