@@ -29,8 +29,8 @@
   --color-primary: #3b63e0;
   --color-primary-hover: #2c4fc4;
 
-  --shadow-card: 0 4px 16px rgba(30, 34, 44, 0.1);
-  --shadow-hero: 0 20px 50px rgba(30, 34, 44, 0.14);
+  --shadow-card: 0 4px 16px rgba(30, 34, 44, 0.18);
+--shadow-hero: 0 20px 50px rgba(30, 34, 44, 0.22);
 }
 
 * {

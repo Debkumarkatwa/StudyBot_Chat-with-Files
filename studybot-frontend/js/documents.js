@@ -37,19 +37,130 @@ document.getElementById("upgradeLink").addEventListener("click", (e) => {
 });
 
 // =====================================================================
-// FILE UPLOAD + LIST
+// FILE UPLOAD + LIST + BIN
 // =====================================================================
 const uploadZone = document.getElementById("uploadZone");
 const fileInput = document.getElementById("fileInput");
 const browseLink = document.getElementById("browseLink");
 const fileList = document.getElementById("fileList");
 const emptyFileList = document.getElementById("emptyFileList");
+const docCountBadge = document.getElementById("docCountBadge");
+const binList = document.getElementById("binList");
+const emptyBinList = document.getElementById("emptyBinList");
+const binCountBadge = document.getElementById("binCountBadge");
+const clearBinBtn = document.getElementById("clearBinBtn");
+const uploadOverflowModal = document.getElementById("uploadOverflowModal");
+const uploadOverflowMessage = document.getElementById("uploadOverflowMessage");
+const uploadOverflowConfirm = document.getElementById("uploadOverflowConfirm");
+const uploadOverflowCancel = document.getElementById("uploadOverflowCancel");
+const uploadOverflowUpgradeLink = document.getElementById("uploadOverflowUpgradeLink");
+const deleteConfirmModal = document.getElementById("deleteConfirmModal");
+const deleteConfirmMessage = document.getElementById("deleteConfirmMessage");
+const deleteConfirmWarning = document.getElementById("deleteConfirmWarning");
+const deleteConfirmSubmit = document.getElementById("deleteConfirmSubmit");
+const deleteConfirmCancel = document.getElementById("deleteConfirmCancel");
 
-// Each entry: { id, name, size, status: "processing" | "ready" }
-let uploadedFiles = [];
+let pendingDeleteDecision = null;
+let pendingDeleteFileId = null;
 
-browseLink.addEventListener("click", () => fileInput.click());
-uploadZone.addEventListener("click", () => fileInput.click());
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function formatSectionCount(current, max) {
+  return `${current}/${max}`;
+}
+
+let pendingOverflowDecision = null;
+
+function openOverflowModal(oldestFile, incomingFile) {
+  uploadOverflowMessage.innerHTML = `You can keep up to <strong>${CONFIG.MAX_FILES}</strong> documents on the free plan. To upload <strong>${escapeHtml(incomingFile.name)}</strong>, the oldest file <strong>${escapeHtml(oldestFile.name)}</strong> will be <span class="deleted-word">deleted</span> and moved to the Recycle Bin.`;
+  uploadOverflowModal.classList.remove("hidden");
+
+  return new Promise((resolve) => {
+    pendingOverflowDecision = resolve;
+  });
+}
+
+function closeOverflowModal(confirmed) {
+  uploadOverflowModal.classList.add("hidden");
+  if (pendingOverflowDecision) {
+    pendingOverflowDecision(confirmed);
+    pendingOverflowDecision = null;
+  }
+}
+
+uploadOverflowConfirm.addEventListener("click", () => closeOverflowModal(true));
+uploadOverflowCancel.addEventListener("click", () => closeOverflowModal(false));
+uploadOverflowModal.addEventListener("click", (e) => {
+  if (e.target === uploadOverflowModal) closeOverflowModal(false);
+});
+uploadOverflowUpgradeLink.addEventListener("click", (e) => {
+  e.preventDefault();
+  alert("Subscription plans are coming soon!");
+});
+
+function openDeleteConfirmModal(fileName, binIsFull) {
+  deleteConfirmMessage.innerHTML = `Are you sure you want to move <strong class="file-name">${escapeHtml(fileName)}</strong> to the Recycle Bin?`;
+  if (binIsFull) {
+    deleteConfirmWarning.innerHTML = `Warning: Recycle Bin is full. Deleting <strong class="file-name">${escapeHtml(fileName)}</strong> will <span class="alert-word">delete</span> the oldest file in the bin.`;
+    deleteConfirmWarning.classList.remove("hidden");
+  } else {
+    deleteConfirmWarning.innerHTML = "";
+    deleteConfirmWarning.classList.add("hidden");
+  }
+  deleteConfirmModal.classList.remove("hidden");
+
+  return new Promise((resolve) => {
+    pendingDeleteDecision = resolve;
+  });
+}
+
+function closeDeleteConfirmModal(confirmed) {
+  deleteConfirmModal.classList.add("hidden");
+  if (pendingDeleteDecision) {
+    pendingDeleteDecision(confirmed);
+    pendingDeleteDecision = null;
+  }
+}
+
+deleteConfirmSubmit.addEventListener("click", () => closeDeleteConfirmModal(true));
+deleteConfirmCancel.addEventListener("click", () => closeDeleteConfirmModal(false));
+deleteConfirmModal.addEventListener("click", (e) => {
+  if (e.target === deleteConfirmModal) closeDeleteConfirmModal(false);
+});
+
+clearBinBtn.addEventListener("click", async () => {
+  const binFiles = await API.getBinDocuments();
+  if (binFiles.length === 0) {
+    alert("Recycle Bin is already empty.");
+    return;
+  }
+  const confirmed = window.confirm("Delete all files from the Recycle Bin permanently?");
+  if (!confirmed) return;
+  await API.clearBin();
+  await refreshAll();
+});
+
+// FIX: browseLink is nested inside uploadZone. Without stopPropagation,
+// clicking it fires its own listener AND bubbles up to uploadZone's
+// listener, calling fileInput.click() twice — which breaks the file
+// dialog on the first attempt in some browsers (needs a 2nd try).
+browseLink.addEventListener("click", (e) => {
+  e.stopPropagation();
+  fileInput.click();
+});
+
+uploadZone.addEventListener("click", (e) => {
+  // Only trigger if the click was on the zone itself, not bubbled from browseLink
+  if (e.target === browseLink) return;
+  fileInput.click();
+});
 
 uploadZone.addEventListener("dragover", (e) => {
   e.preventDefault();
@@ -61,10 +172,10 @@ uploadZone.addEventListener("drop", (e) => {
   uploadZone.classList.remove("dragover");
   handleFiles(e.dataTransfer.files);
 });
-
 fileInput.addEventListener("change", () => {
-  handleFiles(fileInput.files);
-  fileInput.value = ""; // allow re-selecting the same file later
+  const selectedFiles = Array.from(fileInput.files || []);
+  fileInput.value = "";
+  if (selectedFiles.length > 0) handleFiles(selectedFiles);
 });
 
 function formatFileSize(bytes) {
@@ -73,7 +184,9 @@ function formatFileSize(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function handleFiles(fileListInput) {
+async function handleFiles(fileListInput) {
+  const activeFiles = await API.getActiveDocuments();
+
   for (const file of fileListInput) {
     const ext = "." + file.name.split(".").pop().toLowerCase();
     if (!CONFIG.ALLOWED_FILE_TYPES.includes(ext)) {
@@ -81,71 +194,119 @@ function handleFiles(fileListInput) {
       continue;
     }
 
-    if (uploadedFiles.length >= CONFIG.MAX_FILES) {
-      const oldest = uploadedFiles[0];
-      const removeOldest = confirm(
-        `You've reached the ${CONFIG.MAX_FILES}-document limit on the free plan. Remove the oldest file ("${oldest.name}") to add this one?`
-      );
+    if (activeFiles.length >= CONFIG.MAX_FILES) {
+      const oldest = activeFiles[0];
+      const removeOldest = await openOverflowModal(oldest, file);
       if (removeOldest) {
-        removeFile(oldest.id);
+        await API.moveToBin(oldest.id);
+        activeFiles.shift();
       } else {
         return;
       }
     }
 
-    uploadFile(file);
+    const uploaded = await uploadFile(file);
+    if (uploaded) {
+      activeFiles.push({ id: `pending-${Date.now()}`, name: file.name });
+    }
   }
+
+  await refreshAll();
 }
 
 async function uploadFile(file) {
   try {
     const res = await API.uploadFile(file);
-    if (!res.success) return;
-
-    const newFile = {
-      id: res.id || `local-${Date.now()}-${Math.random()}`,
-      name: file.name,
-      size: file.size,
-      status: "processing",
-    };
-    uploadedFiles.push(newFile);
-    renderFileList();
+    if (!res.success) return false;
 
     // Simulate backend processing/embedding time before marking as ready
-    setTimeout(() => {
-      const target = uploadedFiles.find((f) => f.id === newFile.id);
-      if (target) {
-        target.status = "ready";
-        renderFileList();
-      }
+    setTimeout(async () => {
+      await API.markDocumentReady(res.id);
+      await refreshAll();
     }, 1800);
+    return true;
   } catch (err) {
-    console.error(err);
-    alert(`Failed to upload ${file.name}`);
+    console.error("Upload failed:", err);
+    alert(`Failed to upload ${file.name}. Check the console for details.`);
+    return false;
   }
 }
 
-async function removeFile(fileId) {
-  const file = uploadedFiles.find((f) => f.id === fileId);
-  if (!file) return;
+async function deleteFile(fileId) {
   try {
-    await API.deleteFile(fileId);
-    uploadedFiles = uploadedFiles.filter((f) => f.id !== fileId);
-    renderFileList();
+    const [activeFiles, binFiles] = await Promise.all([API.getActiveDocuments(), API.getBinDocuments()]);
+    const targetFile = activeFiles.find((file) => file.id === fileId);
+    if (!targetFile) {
+      alert("Couldn't delete that file — it may have already been removed.");
+      return;
+    }
+
+    const confirmed = await openDeleteConfirmModal(targetFile.name, binFiles.length >= CONFIG.MAX_BIN_FILES);
+    if (!confirmed) return;
+
+    const res = await API.moveToBin(fileId);
+    if (!res.success) {
+      alert("Couldn't delete that file — it may have already been removed.");
+      return;
+    }
+    await refreshAll();
   } catch (err) {
-    console.error(err);
-    alert(`Failed to remove ${file.name}`);
+    console.error("Delete failed:", err);
+    alert("Something went wrong while deleting. Check the console for details.");
   }
 }
 
-function renderFileList() {
-  fileList.innerHTML = "";
-  emptyFileList.classList.toggle("hidden", uploadedFiles.length > 0);
+async function deleteBinFile(fileId) {
+  try {
+    const res = await API.deleteFromBin(fileId);
+    if (!res.success) {
+      alert("Couldn't delete that file from the Recycle Bin.");
+      return;
+    }
+    await refreshAll();
+  } catch (err) {
+    console.error("Delete from bin failed:", err);
+    alert("Something went wrong while deleting from the Recycle Bin.");
+  }
+}
 
-  uploadedFiles.forEach((file) => {
+async function restoreFile(fileId) {
+  try {
+    const activeFiles = await API.getActiveDocuments();
+    if (activeFiles.length >= CONFIG.MAX_FILES) {
+      alert(`Your active documents are full (${CONFIG.MAX_FILES} max). Remove one before restoring.`);
+      return;
+    }
+    const res = await API.restoreFromBin(fileId);
+    if (!res.success) {
+      alert("Couldn't restore that file — it may have already expired.");
+      return;
+    }
+    await refreshAll();
+  } catch (err) {
+    console.error("Restore failed:", err);
+    alert("Something went wrong while restoring. Check the console for details.");
+  }
+}
+
+function daysRemainingLabel(deletedAt) {
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const elapsed = Date.now() - deletedAt;
+  const remaining = Math.max(0, 7 - Math.floor(elapsed / msPerDay));
+  if (remaining === 0) return "Expiring today";
+  if (remaining === 1) return "1 day left";
+  return `${remaining} days left`;
+}
+
+function renderActiveList(files) {
+  fileList.innerHTML = "";
+  emptyFileList.classList.toggle("hidden", files.length > 0);
+  docCountBadge.textContent = formatSectionCount(files.length, CONFIG.MAX_FILES);
+  docCountBadge.classList.toggle("full", files.length >= CONFIG.MAX_FILES);
+
+  files.forEach((file) => {
     const li = document.createElement("li");
     li.className = "file-item";
-
     const statusLabel = file.status === "processing" ? "⏳ Processing..." : "✓ Ready";
     const statusClass = file.status === "processing" ? "processing" : "ready";
 
@@ -159,13 +320,63 @@ function renderFileList() {
       </div>
       <div class="file-item-actions">
         <span class="status-badge ${statusClass}">${statusLabel}</span>
-        <button class="file-remove-btn" aria-label="Remove ${file.name}">✕</button>
+        <button type="button" class="icon-action-sm delete-btn" aria-label="Delete ${file.name}" title="Move to Recycle Bin">🗑️</button>
       </div>
     `;
-
-    li.querySelector(".file-remove-btn").addEventListener("click", () => removeFile(file.id));
+    li.querySelector(".delete-btn").addEventListener("click", () => deleteFile(file.id));
     fileList.appendChild(li);
   });
 }
 
-renderFileList(); // initial empty state
+function renderBinList(files) {
+  binList.innerHTML = "";
+  emptyBinList.classList.toggle("hidden", files.length > 0);
+  binCountBadge.textContent = formatSectionCount(files.length, CONFIG.MAX_BIN_FILES);
+  binCountBadge.classList.toggle("full", files.length >= CONFIG.MAX_BIN_FILES);
+
+  const orderedFiles = [...files].sort((a, b) => b.deletedAt - a.deletedAt);
+
+  orderedFiles.forEach((file, index) => {
+    const li = document.createElement("li");
+    li.className = "file-item";
+
+    li.innerHTML = `
+      <div class="bin-row">
+        <div class="bin-row-index">${index + 1}</div>
+        <div class="bin-row-content">
+          <div class="file-item-info">
+            <span class="file-item-icon" aria-hidden="true">📄</span>
+            <div class="file-item-details">
+              <div class="file-item-name file-item-name-bin"><span class="bin-file-name">${file.name}</span></div>
+              <div class="file-item-size">${formatFileSize(file.size)}</div>
+            </div>
+          </div>
+          <div class="file-item-actions bin-row-actions">
+            <span class="status-badge expiry">${daysRemainingLabel(file.deletedAt)}</span>
+            <button type="button" class="icon-action-sm delete-btn bin-delete-btn" aria-label="Delete ${file.name} permanently" title="Delete permanently">🗑️</button>
+            <button type="button" class="icon-action-sm restore-btn" aria-label="Restore ${file.name}" title="Restore from Recycle Bin">↩️</button>
+          </div>
+        </div>
+      </div>
+    `;
+    li.querySelector(".bin-delete-btn").addEventListener("click", () => deleteBinFile(file.id));
+    li.querySelector(".restore-btn").addEventListener("click", () => restoreFile(file.id));
+    binList.appendChild(li);
+  });
+}
+
+async function refreshAll() {
+  try {
+    await API.purgeExpiredBinItems(); // silently drop anything past 7 days
+    const [activeFiles, binFiles] = await Promise.all([
+      API.getActiveDocuments(),
+      API.getBinDocuments(),
+    ]);
+    renderActiveList(activeFiles);
+    renderBinList(binFiles);
+  } catch (err) {
+    console.error("Failed to load documents:", err);
+  }
+}
+
+refreshAll();

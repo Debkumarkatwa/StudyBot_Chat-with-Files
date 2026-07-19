@@ -58,6 +58,8 @@
   </header>
 
   <main class="documents-page">
+
+    <!-- ============ HEADER ============ -->
     <div class="documents-header">
       <h1>Your Documents</h1>
       <p id="uploadLimitText">You can upload up to 3 documents on the free plan. <a href="#" id="upgradeLink">Need more? Upgrade your plan.</a></p>
@@ -71,13 +73,62 @@
       <p class="hint">PDF, DOCX, PPTX, TXT</p>
     </div>
 
-    <!-- ============ FILE LIST ============ -->
-    <div class="file-list-section">
-      <h2>Uploaded Files</h2>
+    <!-- ============ MY DOCUMENTS SECTION ============ -->
+    <section class="doc-section">
+      <h2 class="doc-section-title">
+        📄 My Documents
+        <span class="section-badge" id="docCountBadge">0/3</span>
+      </h2>
       <p class="empty-file-list hidden" id="emptyFileList">No documents uploaded yet — add one above to get started.</p>
       <ul class="file-list" id="fileList"></ul>
-    </div>
+    </section>
+
+    <!-- ============ RECYCLE BIN SECTION ============ -->
+    <section class="doc-section">
+      <h2 class="doc-section-title">
+        🗑️ Recycle Bin
+        <span class="section-badge" id="binCountBadge">0/5</span>
+        <span class="bin-header-actions">
+          <button type="button" class="btn-ghost btn-sm btn-delete-all" id="clearBinBtn">Delete all</button>
+        </span>
+      </h2>
+      <p class="bin-note">Deleted files stay here for 7 days before being permanently removed. The bin holds up to 5 files — deleting a 6th removes the oldest automatically.</p>
+      <p class="empty-file-list hidden" id="emptyBinList">Recycle bin is empty.</p>
+      <ul class="file-list" id="binList"></ul>
+    </section>
+
   </main>
+
+  <!-- ============ OVERFLOW CONFIRMATION MODAL ============ -->
+  <div class="overflow-modal hidden" id="uploadOverflowModal" role="dialog" aria-modal="true" aria-labelledby="uploadOverflowTitle">
+    <div class="overflow-modal-card">
+      <h3 id="uploadOverflowTitle">Free plan limit reached</h3>
+      <p class="overflow-modal-message" id="uploadOverflowMessage"></p>
+      <p class="overflow-modal-upgrade">
+        Need more storage? <a href="#" id="uploadOverflowUpgradeLink">Upgrade the plan.</a>
+      </p>
+      <div class="overflow-modal-actions">
+        <button type="button" class="btn-ghost" id="uploadOverflowCancel">Cancel</button>
+        <button type="button" class="btn-primary" id="uploadOverflowConfirm">Delete oldest and continue</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ DELETE CONFIRMATION MODAL ============ -->
+  <div class="overflow-modal hidden" id="deleteConfirmModal" role="dialog" aria-modal="true" aria-labelledby="deleteConfirmTitle">
+    <div class="overflow-modal-card">
+      <h3 id="deleteConfirmTitle">Delete document?</h3>
+      <p class="overflow-modal-message" id="deleteConfirmMessage"></p>
+      <p class="overflow-modal-warning hidden" id="deleteConfirmWarning"></p>
+      <div class="overflow-modal-actions">
+        <button type="button" class="btn-ghost" id="deleteConfirmCancel">Cancel</button>
+        <button type="button" class="btn-primary" id="deleteConfirmSubmit">Delete document</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ FLOATING CHAT BUTTON ============ -->
+  <a href="chat.html" class="fab-chat-btn" aria-label="Go to chat">💬</a>
 
   <script src="js/config.js"></script>
   <script src="js/theme.js"></script>
