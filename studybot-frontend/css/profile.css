@@ -1,0 +1,230 @@
+.profile-page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 32px 24px 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ===== Profile card ===== */
+.profile-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.profile-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.profile-info {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.profile-info .field-group {
+  margin-bottom: 0;
+}
+
+.profile-info input:disabled {
+  opacity: 0.75;
+  cursor: default;
+  background: var(--color-surface);
+  border-color: transparent;
+  padding-left: 0;
+}
+
+.locked-note {
+  font-size: 11px;
+  color: var(--color-text-dim);
+  font-weight: 400;
+  margin-left: 4px;
+}
+
+.profile-card-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ===== Stats card ===== */
+.stats-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: var(--shadow-card);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  text-align: center;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--color-text-dim);
+}
+
+/* ===== Settings card (change password) ===== */
+.settings-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-card);
+}
+
+.settings-card h2 {
+  font-size: 16px;
+  margin-bottom: 16px;
+}
+
+.settings-card .btn-primary {
+  margin-top: 4px;
+}
+
+/* ===== Danger zone ===== */
+.danger-zone {
+  border: 1px solid rgba(224, 85, 85, 0.4);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  background: rgba(224, 85, 85, 0.05);
+}
+
+.danger-zone h2 {
+  font-size: 16px;
+  color: #e05555;
+  margin-bottom: 8px;
+}
+
+.danger-zone p {
+  color: var(--color-text-dim);
+  font-size: 13px;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.btn-danger {
+  background: #e05555;
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 9px 18px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.btn-danger:hover {
+  background: #c94545;
+}
+
+.btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ===== Delete account modal ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+  padding: 20px;
+}
+
+.modal-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: var(--shadow-hero);
+}
+
+.modal-card h2 {
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+.modal-card p {
+  color: var(--color-text-dim);
+  font-size: 13px;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.modal-confirm-instruction {
+  color: var(--color-text) !important;
+}
+
+.modal-card input {
+  width: 100%;
+  font-family: inherit;
+  color: var(--color-text);
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  outline: none;
+  font-size: 14px;
+  margin-bottom: 18px;
+}
+
+.modal-card input:focus {
+  border-color: var(--color-primary);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+@media (max-width: 480px) {
+  .profile-card {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .profile-card-actions {
+    width: 100%;
+    justify-content: center;
+  }
+}

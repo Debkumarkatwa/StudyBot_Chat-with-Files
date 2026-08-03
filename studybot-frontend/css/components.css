@@ -243,18 +243,3 @@
 .fab-chat-btn:hover {
   background: var(--color-primary-hover);
 }
-
-/* ===== Dev-only toggle (delete once real auth exists) ===== */
-.dev-toggle {
-  position: fixed;
-  bottom: 24px;
-  left: 24px;
-  background: #402020;
-  color: #ffb4b4;
-  border: 1px dashed #a04040;
-  border-radius: var(--radius-sm);
-  padding: 8px 12px;
-  font-size: 12px;
-  cursor: pointer;
-  z-index: 100;
-}

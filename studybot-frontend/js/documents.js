@@ -1,5 +1,9 @@
 // documents.js
 
+if (!API.isAuthenticated()) {
+  window.location.replace("login.html");
+} else {
+
 // ===== Sliding sidebar =====
 const appSidebar = document.getElementById("appSidebar");
 const sidebarOverlay = document.getElementById("sidebarOverlay");
@@ -24,8 +28,9 @@ profileIconBtn.addEventListener("click", (e) => {
 document.addEventListener("click", () => profileDropdown.classList.add("hidden"));
 
 function handleLogout() {
-  // TODO: call API.logout() once backend exists
-  window.location.href = "landing.html";
+  API.logout().finally(() => {
+    window.location.href = "landing.html";
+  });
 }
 document.getElementById("logoutBtn").addEventListener("click", handleLogout);
 document.getElementById("sidebarLogoutBtn").addEventListener("click", handleLogout);
@@ -41,6 +46,7 @@ document.getElementById("upgradeLink").addEventListener("click", (e) => {
 // =====================================================================
 const uploadZone = document.getElementById("uploadZone");
 const fileInput = document.getElementById("fileInput");
+const documentsFeedback = document.getElementById("documentsFeedback");
 const browseLink = document.getElementById("browseLink");
 const fileList = document.getElementById("fileList");
 const emptyFileList = document.getElementById("emptyFileList");
@@ -72,8 +78,27 @@ function escapeHtml(value) {
     .replaceAll("'", "&#39;");
 }
 
+function createSafeElement(tagName, textContent) {
+  const el = document.createElement(tagName);
+  el.textContent = textContent;
+  return el;
+}
+
 function formatSectionCount(current, max) {
   return `${current}/${max}`;
+}
+
+function showDocumentsFeedback(message, type = "success") {
+  if (!documentsFeedback) return;
+  documentsFeedback.textContent = message;
+  documentsFeedback.className = `inline-feedback ${type}`;
+  documentsFeedback.classList.remove("hidden");
+}
+
+function clearDocumentsFeedback() {
+  if (!documentsFeedback) return;
+  documentsFeedback.textContent = "";
+  documentsFeedback.className = "inline-feedback hidden";
 }
 
 let pendingOverflowDecision = null;
@@ -138,13 +163,14 @@ deleteConfirmModal.addEventListener("click", (e) => {
 clearBinBtn.addEventListener("click", async () => {
   const binFiles = await API.getBinDocuments();
   if (binFiles.length === 0) {
-    alert("Recycle Bin is already empty.");
+    showDocumentsFeedback("Recycle Bin is already empty.", "error");
     return;
   }
   const confirmed = window.confirm("Delete all files from the Recycle Bin permanently?");
   if (!confirmed) return;
   await API.clearBin();
   await refreshAll();
+  showDocumentsFeedback("Recycle Bin cleared.", "success");
 });
 
 // FIX: browseLink is nested inside uploadZone. Without stopPropagation,
@@ -212,12 +238,18 @@ async function handleFiles(fileListInput) {
   }
 
   await refreshAll();
+  if (fileListInput.length > 0) {
+    showDocumentsFeedback(`${fileListInput.length} file${fileListInput.length > 1 ? "s" : ""} processed.`, "success");
+  }
 }
 
 async function uploadFile(file) {
   try {
     const res = await API.uploadFile(file);
-    if (!res.success) return false;
+    if (!res.success) {
+      showDocumentsFeedback(`Upload failed for ${file.name}.`, "error");
+      return false;
+    }
 
     // Simulate backend processing/embedding time before marking as ready
     setTimeout(async () => {
@@ -227,7 +259,7 @@ async function uploadFile(file) {
     return true;
   } catch (err) {
     console.error("Upload failed:", err);
-    alert(`Failed to upload ${file.name}. Check the console for details.`);
+    showDocumentsFeedback(`Failed to upload ${file.name}.`, "error");
     return false;
   }
 }
@@ -237,7 +269,7 @@ async function deleteFile(fileId) {
     const [activeFiles, binFiles] = await Promise.all([API.getActiveDocuments(), API.getBinDocuments()]);
     const targetFile = activeFiles.find((file) => file.id === fileId);
     if (!targetFile) {
-      alert("Couldn't delete that file — it may have already been removed.");
+      showDocumentsFeedback("Couldn't delete that file — it may have already been removed.", "error");
       return;
     }
 
@@ -246,13 +278,14 @@ async function deleteFile(fileId) {
 
     const res = await API.moveToBin(fileId);
     if (!res.success) {
-      alert("Couldn't delete that file — it may have already been removed.");
+      showDocumentsFeedback("Couldn't delete that file — it may have already been removed.", "error");
       return;
     }
     await refreshAll();
+    showDocumentsFeedback("File moved to the Recycle Bin.", "success");
   } catch (err) {
     console.error("Delete failed:", err);
-    alert("Something went wrong while deleting. Check the console for details.");
+    showDocumentsFeedback("Something went wrong while deleting.", "error");
   }
 }
 
@@ -260,13 +293,14 @@ async function deleteBinFile(fileId) {
   try {
     const res = await API.deleteFromBin(fileId);
     if (!res.success) {
-      alert("Couldn't delete that file from the Recycle Bin.");
+      showDocumentsFeedback("Couldn't delete that file from the Recycle Bin.", "error");
       return;
     }
     await refreshAll();
+    showDocumentsFeedback("File deleted permanently.", "success");
   } catch (err) {
     console.error("Delete from bin failed:", err);
-    alert("Something went wrong while deleting from the Recycle Bin.");
+    showDocumentsFeedback("Something went wrong while deleting from the Recycle Bin.", "error");
   }
 }
 
@@ -274,18 +308,19 @@ async function restoreFile(fileId) {
   try {
     const activeFiles = await API.getActiveDocuments();
     if (activeFiles.length >= CONFIG.MAX_FILES) {
-      alert(`Your active documents are full (${CONFIG.MAX_FILES} max). Remove one before restoring.`);
+      showDocumentsFeedback(`Your active documents are full (${CONFIG.MAX_FILES} max). Remove one before restoring.`, "error");
       return;
     }
     const res = await API.restoreFromBin(fileId);
     if (!res.success) {
-      alert("Couldn't restore that file — it may have already expired.");
+      showDocumentsFeedback("Couldn't restore that file — it may have already expired.", "error");
       return;
     }
     await refreshAll();
+    showDocumentsFeedback("File restored from the Recycle Bin.", "success");
   } catch (err) {
     console.error("Restore failed:", err);
-    alert("Something went wrong while restoring. Check the console for details.");
+    showDocumentsFeedback("Something went wrong while restoring.", "error");
   }
 }
 
@@ -310,19 +345,46 @@ function renderActiveList(files) {
     const statusLabel = file.status === "processing" ? "⏳ Processing..." : "✓ Ready";
     const statusClass = file.status === "processing" ? "processing" : "ready";
 
-    li.innerHTML = `
-      <div class="file-item-info">
-        <span class="file-item-icon" aria-hidden="true">📄</span>
-        <div class="file-item-details">
-          <div class="file-item-name">${file.name}</div>
-          <div class="file-item-size">${formatFileSize(file.size)}</div>
-        </div>
-      </div>
-      <div class="file-item-actions">
-        <span class="status-badge ${statusClass}">${statusLabel}</span>
-        <button type="button" class="icon-action-sm delete-btn" aria-label="Delete ${file.name}" title="Move to Recycle Bin">🗑️</button>
-      </div>
-    `;
+    const info = document.createElement("div");
+    info.className = "file-item-info";
+
+    const icon = document.createElement("span");
+    icon.className = "file-item-icon";
+    icon.setAttribute("aria-hidden", "true");
+    icon.textContent = "📄";
+
+    const details = document.createElement("div");
+    details.className = "file-item-details";
+
+    const nameEl = createSafeElement("div", file.name);
+    nameEl.className = "file-item-name";
+
+    const sizeEl = createSafeElement("div", formatFileSize(file.size));
+    sizeEl.className = "file-item-size";
+
+    details.appendChild(nameEl);
+    details.appendChild(sizeEl);
+    info.appendChild(icon);
+    info.appendChild(details);
+
+    const actions = document.createElement("div");
+    actions.className = "file-item-actions";
+
+    const status = createSafeElement("span", statusLabel);
+    status.className = `status-badge ${statusClass}`;
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.type = "button";
+    deleteBtn.className = "icon-action-sm delete-btn";
+    deleteBtn.setAttribute("aria-label", `Delete ${file.name}`);
+    deleteBtn.title = "Move to Recycle Bin";
+    deleteBtn.textContent = "🗑️";
+
+    actions.appendChild(status);
+    actions.appendChild(deleteBtn);
+
+    li.appendChild(info);
+    li.appendChild(actions);
     li.querySelector(".delete-btn").addEventListener("click", () => deleteFile(file.id));
     fileList.appendChild(li);
   });
@@ -340,25 +402,72 @@ function renderBinList(files) {
     const li = document.createElement("li");
     li.className = "file-item";
 
-    li.innerHTML = `
-      <div class="bin-row">
-        <div class="bin-row-index">${index + 1}</div>
-        <div class="bin-row-content">
-          <div class="file-item-info">
-            <span class="file-item-icon" aria-hidden="true">📄</span>
-            <div class="file-item-details">
-              <div class="file-item-name file-item-name-bin"><span class="bin-file-name">${file.name}</span></div>
-              <div class="file-item-size">${formatFileSize(file.size)}</div>
-            </div>
-          </div>
-          <div class="file-item-actions bin-row-actions">
-            <span class="status-badge expiry">${daysRemainingLabel(file.deletedAt)}</span>
-            <button type="button" class="icon-action-sm delete-btn bin-delete-btn" aria-label="Delete ${file.name} permanently" title="Delete permanently">🗑️</button>
-            <button type="button" class="icon-action-sm restore-btn" aria-label="Restore ${file.name}" title="Restore from Recycle Bin">↩️</button>
-          </div>
-        </div>
-      </div>
-    `;
+    const row = document.createElement("div");
+    row.className = "bin-row";
+
+    const rowIndex = createSafeElement("div", String(index + 1));
+    rowIndex.className = "bin-row-index";
+
+    const rowContent = document.createElement("div");
+    rowContent.className = "bin-row-content";
+
+    const info = document.createElement("div");
+    info.className = "file-item-info";
+
+    const icon = document.createElement("span");
+    icon.className = "file-item-icon";
+    icon.setAttribute("aria-hidden", "true");
+    icon.textContent = "📄";
+
+    const details = document.createElement("div");
+    details.className = "file-item-details";
+
+    const nameWrapper = document.createElement("div");
+    nameWrapper.className = "file-item-name file-item-name-bin";
+
+    const nameEl = createSafeElement("span", file.name);
+    nameEl.className = "bin-file-name";
+
+    const sizeEl = createSafeElement("div", formatFileSize(file.size));
+    sizeEl.className = "file-item-size";
+
+    nameWrapper.appendChild(nameEl);
+    details.appendChild(nameWrapper);
+    details.appendChild(sizeEl);
+
+    info.appendChild(icon);
+    info.appendChild(details);
+
+    const actions = document.createElement("div");
+    actions.className = "file-item-actions bin-row-actions";
+
+    const expiry = createSafeElement("span", daysRemainingLabel(file.deletedAt));
+    expiry.className = "status-badge expiry";
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.type = "button";
+    deleteBtn.className = "icon-action-sm delete-btn bin-delete-btn";
+    deleteBtn.setAttribute("aria-label", `Delete ${file.name} permanently`);
+    deleteBtn.title = "Delete permanently";
+    deleteBtn.textContent = "🗑️";
+
+    const restoreBtn = document.createElement("button");
+    restoreBtn.type = "button";
+    restoreBtn.className = "icon-action-sm restore-btn";
+    restoreBtn.setAttribute("aria-label", `Restore ${file.name}`);
+    restoreBtn.title = "Restore from Recycle Bin";
+    restoreBtn.textContent = "↩️";
+
+    actions.appendChild(expiry);
+    actions.appendChild(deleteBtn);
+    actions.appendChild(restoreBtn);
+
+    row.appendChild(rowIndex);
+    row.appendChild(rowContent);
+    rowContent.appendChild(info);
+    rowContent.appendChild(actions);
+
+    li.appendChild(row);
     li.querySelector(".bin-delete-btn").addEventListener("click", () => deleteBinFile(file.id));
     li.querySelector(".restore-btn").addEventListener("click", () => restoreFile(file.id));
     binList.appendChild(li);
@@ -372,6 +481,7 @@ async function refreshAll() {
       API.getActiveDocuments(),
       API.getBinDocuments(),
     ]);
+    clearDocumentsFeedback();
     renderActiveList(activeFiles);
     renderBinList(binFiles);
   } catch (err) {
@@ -380,3 +490,4 @@ async function refreshAll() {
 }
 
 refreshAll();
+}

@@ -14,8 +14,9 @@ document.addEventListener("click", () => {
 });
 
 document.getElementById("logoutBtn")?.addEventListener("click", () => {
-  // TODO: call API.logout() once backend exists, then clear session/token
-  setLoggedIn(false);
+  API.logout().finally(() => {
+    setLoggedIn(false);
+  });
 });
 
 // ===== Auth state (real logic plugs in here later) =====
@@ -27,9 +28,7 @@ function setLoggedIn(isLoggedIn) {
   navLoggedIn.classList.toggle("hidden", !isLoggedIn);
 }
 
-// ===== DEV-ONLY toggle — delete this block once real auth exists =====
-let devLoggedIn = false;
-document.getElementById("devAuthToggle").addEventListener("click", () => {
-  devLoggedIn = !devLoggedIn;
-  setLoggedIn(devLoggedIn);
+setLoggedIn(API.isAuthenticated());
+window.addEventListener("studybot:authchange", () => {
+  setLoggedIn(API.isAuthenticated());
 });

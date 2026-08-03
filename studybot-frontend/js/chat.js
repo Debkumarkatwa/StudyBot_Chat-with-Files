@@ -6,6 +6,8 @@ const sidebarOverlay = document.getElementById("sidebarOverlay");
 const openSidebarBtn = document.getElementById("openSidebar");
 const closeSidebarBtn = document.getElementById("closeSidebar");
 
+let hybridMode = localStorage.getItem("studybot-hybrid-default") === "true";
+
 function openSidebar() {
   appSidebar.classList.add("open");
   sidebarOverlay.classList.add("visible");
@@ -28,115 +30,12 @@ profileIconBtn.addEventListener("click", (e) => {
 document.addEventListener("click", () => profileDropdown.classList.add("hidden"));
 
 function handleLogout() {
-  // TODO: call API.logout() once backend exists, then clear session/token
-  window.location.href = "landing.html";
+  API.logout().finally(() => {
+    window.location.href = "landing.html";
+  });
 }
 document.getElementById("logoutBtn").addEventListener("click", handleLogout);
 document.getElementById("sidebarLogoutBtn").addEventListener("click", handleLogout);
-
-// ===== Document Selector dropdown =====
-const docSelectorBtn = document.getElementById("docSelectorBtn");
-const docSelectorDropdown = document.getElementById("docSelectorDropdown");
-const docFilterDot = document.getElementById("docFilterDot");
-const docAllCheckbox = document.getElementById("docAll");
-const docCheckboxList = document.getElementById("docCheckboxList");
-
-let allDocuments = []; // populated from API.getDocuments()
-
-function openDocSelectorDropdown() {
-  docSelectorDropdown.classList.remove("hidden");
-}
-
-function closeDocSelectorDropdown() {
-  if (docSelectorDropdown.classList.contains("hidden")) return;
-  docSelectorDropdown.classList.add("hidden");
-  enforceNonEmptySelection(); // if user unchecked everything, default back to "All"
-}
-
-docSelectorBtn.addEventListener("click", (e) => {
-  e.stopPropagation();
-  docSelectorDropdown.classList.contains("hidden") ? openDocSelectorDropdown() : closeDocSelectorDropdown();
-});
-document.addEventListener("click", closeDocSelectorDropdown);
-docSelectorDropdown.addEventListener("click", (e) => e.stopPropagation());
-
-function renderDocCheckboxList() {
-  docCheckboxList.innerHTML = "";
-  allDocuments.forEach((doc) => {
-    const label = document.createElement("label");
-    label.className = "doc-checkbox-row";
-    label.innerHTML = `<input type="checkbox" class="doc-item-checkbox" data-doc-id="${doc.id}" checked /><span>${doc.name}</span>`;
-    docCheckboxList.appendChild(label);
-  });
-}
-
-function getIndividualCheckboxes() {
-  return Array.from(document.querySelectorAll(".doc-item-checkbox"));
-}
-
-function enforceNonEmptySelection() {
-  const checkboxes = getIndividualCheckboxes();
-  if (checkboxes.length === 0) return;
-  const checkedBoxes = checkboxes.filter((cb) => cb.checked);
-  if (checkedBoxes.length === 0) {
-    docAllCheckbox.checked = true;
-    checkboxes.forEach((cb) => (cb.checked = true));
-    updateDocSelectorLabel();
-  }
-}
-
-function updateDocSelectorLabel() {
-  const checkboxes = getIndividualCheckboxes();
-  const checkedBoxes = checkboxes.filter((cb) => cb.checked);
-  let label;
-  let showDot = false;
-
-  if (checkedBoxes.length === checkboxes.length) {
-    label = "Doc Selector: All Documents";
-  } else if (checkedBoxes.length === 1) {
-    const doc = allDocuments.find((d) => d.id === checkedBoxes[0].dataset.docId);
-    label = `Doc Selector: ${doc ? doc.name : "1 selected"}`;
-    showDot = true;
-  } else {
-    label = `Doc Selector: ${checkedBoxes.length} selected`;
-    showDot = true;
-  }
-
-  docSelectorBtn.setAttribute("data-tooltip", label);
-  docFilterDot.hidden = !showDot;
-}
-
-function getSelectedDocIds() {
-  const checkboxes = getIndividualCheckboxes();
-  const checkedBoxes = checkboxes.filter((cb) => cb.checked);
-  if (checkedBoxes.length === checkboxes.length) return "all";
-  return checkedBoxes.map((cb) => cb.dataset.docId);
-}
-
-// "All" checkbox controls every individual checkbox
-docAllCheckbox.addEventListener("change", () => {
-  getIndividualCheckboxes().forEach((cb) => (cb.checked = docAllCheckbox.checked));
-  updateDocSelectorLabel();
-});
-
-// Any individual checkbox controls "All" state (event delegation, list is dynamic)
-docCheckboxList.addEventListener("change", (e) => {
-  if (!e.target.classList.contains("doc-item-checkbox")) return;
-  const checkboxes = getIndividualCheckboxes();
-  docAllCheckbox.checked = checkboxes.every((cb) => cb.checked);
-  updateDocSelectorLabel();
-});
-
-// ===== Hybrid mode toggle (icon button, not checkbox) =====
-const hybridToggleBtn = document.getElementById("hybridToggleBtn");
-let hybridMode = false;
-
-hybridToggleBtn.addEventListener("click", () => {
-  hybridMode = !hybridMode;
-  hybridToggleBtn.classList.toggle("active", hybridMode);
-  hybridToggleBtn.setAttribute("aria-pressed", hybridMode ? "true" : "false");
-  hybridToggleBtn.setAttribute("data-tooltip", hybridMode ? "Hybrid Mode: On" : "Hybrid Mode: Off");
-});
 
 // ===== Empty state vs chat container =====
 const emptyState = document.getElementById("emptyState");
@@ -151,21 +50,14 @@ function setHasDocuments(hasDocuments) {
 async function loadDocuments() {
   try {
     const res = await API.getDocuments();
-    allDocuments = res.documents;
-    renderDocCheckboxList();
-    updateDocSelectorLabel();
-    setHasDocuments(allDocuments.length > 0);
+    setHasDocuments(res.documents.length > 0);
   } catch (err) {
     console.error("Failed to load documents:", err);
   }
 }
 loadDocuments();
-
-// ===== DEV-ONLY: simulate empty vs populated state — delete once Documents page is real =====
-let devHasDocs = true;
-document.getElementById("devDocToggle").addEventListener("click", () => {
-  devHasDocs = !devHasDocs;
-  setHasDocuments(devHasDocs);
+window.addEventListener("studybot:documentschange", () => {
+  loadDocuments();
 });
 
 // =====================================================================
@@ -260,10 +152,7 @@ let lastUserQuery = null;
 async function sendChatMessage(text) {
   const loadingId = renderLoading();
   try {
-    const res = await API.sendMessage(text, {
-      hybrid: hybridMode,
-      selectedDocIds: getSelectedDocIds(),
-    });
+    const res = await API.sendMessage(text);
     removeLoading(loadingId);
     renderMessage(res.answer, "bot", res.source);
   } catch (err) {

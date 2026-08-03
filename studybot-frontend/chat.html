@@ -57,9 +57,6 @@
     </div>
   </header>
 
-  <!-- DEV-ONLY: remove once Documents page + real data exist -->
-  <button id="devDocToggle" class="dev-toggle">🔧 Toggle has-docs (dev)</button>
-
   <main class="chat-page">
 
     <!-- ============ EMPTY STATE (no documents uploaded) ============ -->
@@ -81,37 +78,6 @@
       <form class="chat-input-bar" id="chatForm">
         <div class="input-bar-actions">
           <a href="documents.html" class="icon-action-btn" data-tooltip="Add Document" aria-label="Add Document">+</a>
-
-          <div class="doc-selector-wrapper">
-            <button
-              type="button"
-              class="icon-action-btn"
-              id="docSelectorBtn"
-              data-tooltip="Doc Selector: All Documents"
-              aria-label="Select which documents to search"
-            >
-              📄<span class="filter-dot" id="docFilterDot" hidden></span>
-            </button>
-            <div class="doc-selector-dropdown hidden" id="docSelectorDropdown">
-              <label class="doc-checkbox-row">
-                <input type="checkbox" id="docAll" checked />
-                <span>All Documents</span>
-              </label>
-              <hr />
-              <div id="docCheckboxList">
-                <!-- populated by chat.js from mock document list -->
-              </div>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            class="icon-action-btn"
-            id="hybridToggleBtn"
-            data-tooltip="Hybrid Mode: Off"
-            aria-label="Toggle hybrid mode"
-            aria-pressed="false"
-          >🌐</button>
         </div>
 
         <textarea

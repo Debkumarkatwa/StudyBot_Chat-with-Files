@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
+
+  <script>
+    (function () {
+      const saved = localStorage.getItem("studybot-theme");
+      const theme = saved || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+      document.documentElement.setAttribute("data-theme", theme);
+    })();
+  </script>
+
+  <title>Settings — StudyBot</title>
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/profile.css" />
+  <link rel="stylesheet" href="css/settings.css" />
+</head>
+<body>
+
+  <!-- ============ SLIDING APP SIDEBAR ============ -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <aside class="app-sidebar" id="appSidebar">
+    <div class="app-sidebar-header">
+      <span class="logo">StudyBot</span>
+      <button class="icon-btn" id="closeSidebar" aria-label="Close sidebar">✕</button>
+    </div>
+    <nav class="app-sidebar-nav">
+      <a href="landing.html" class="sidebar-link">🏠 Home</a>
+      <a href="chat.html" class="sidebar-link">💬 Chat</a>
+      <a href="documents.html" class="sidebar-link">📄 Documents</a>
+      <a href="profile.html" class="sidebar-link">👤 Profile</a>
+      <a href="settings.html" class="sidebar-link active">⚙️ Settings</a>
+    </nav>
+    <div class="app-sidebar-footer">
+      <button class="sidebar-link logout-link" id="sidebarLogoutBtn">🚪 Logout</button>
+    </div>
+  </aside>
+
+  <!-- ============ TOP NAVBAR ============ -->
+  <header class="topnav">
+    <div class="topnav-left">
+      <button class="icon-btn" id="openSidebar" aria-label="Open sidebar">☰</button>
+      <span class="logo">StudyBot</span>
+    </div>
+    <div class="topnav-right">
+      <button class="icon-btn" id="themeToggle" aria-label="Toggle light/dark theme" aria-pressed="false">🌙</button>
+      <div class="profile-menu-wrapper">
+        <button class="profile-icon-btn" id="profileIconBtn" aria-label="Open profile menu">👤</button>
+        <div class="profile-dropdown hidden" id="profileDropdown">
+          <a href="profile.html">View Profile</a>
+          <button id="logoutBtn">Logout</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="settings-page">
+    <h1>Settings</h1>
+
+    <!-- ============ APPEARANCE ============ -->
+    <section class="settings-card">
+      <h2>Appearance</h2>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-title">Theme</div>
+          <div class="settings-row-desc">Choose how StudyBot looks on your screen.</div>
+        </div>
+        <div class="theme-switch-group">
+          <button class="theme-option" id="themeOptionDark" data-theme-option="dark">🌙 Dark</button>
+          <button class="theme-option" id="themeOptionLight" data-theme-option="light">☀️ Light</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ CHAT DEFAULTS ============ -->
+    <section class="settings-card">
+      <h2>Chat Defaults</h2>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-title">Hybrid Mode by default</div>
+          <div class="settings-row-desc">When on, new chats start with Hybrid Mode enabled (allows general AI knowledge alongside your documents).</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="hybridDefaultToggle" />
+          <span class="switch-slider"></span>
+        </label>
+      </div>
+    </section>
+
+    <!-- ============ ACCOUNT ============ -->
+    <section class="settings-card">
+      <h2>Account</h2>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-title">Profile &amp; Password</div>
+          <div class="settings-row-desc">Edit your name, or change your password.</div>
+        </div>
+        <a href="profile.html" class="btn-ghost">Go to Profile</a>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-title">Manage Account</div>
+          <div class="settings-row-desc">Permanently delete your account and all data.</div>
+        </div>
+        <a href="profile.html#danger-zone" class="btn-ghost danger-link">Manage</a>
+      </div>
+    </section>
+
+    <!-- ============ LEGAL ============ -->
+    <section class="settings-card">
+      <h2>Legal</h2>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-title">Terms of Service</div>
+        </div>
+        <a href="terms.html" class="btn-ghost">View</a>
+      </div>
+      <div class="settings-row">
+        <div>
+          <div class="settings-row-title">Privacy Policy</div>
+        </div>
+        <a href="privacy.html" class="btn-ghost">View</a>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ FLOATING CHAT BUTTON ============ -->
+  <a href="chat.html" class="fab-chat-btn" aria-label="Go to chat">💬</a>
+
+  <script src="js/config.js"></script>
+  <script src="js/theme.js"></script>
+  <script src="js/settings.js"></script>
+</body>
+</html>

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
+
+  <script>
+    (function () {
+      const saved = localStorage.getItem("studybot-theme");
+      const theme = saved || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+      document.documentElement.setAttribute("data-theme", theme);
+    })();
+  </script>
+
+  <title>Profile — StudyBot</title>
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/auth.css" />
+  <link rel="stylesheet" href="css/profile.css" />
+</head>
+<body>
+
+  <!-- ============ SLIDING APP SIDEBAR ============ -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <aside class="app-sidebar" id="appSidebar">
+    <div class="app-sidebar-header">
+      <span class="logo">StudyBot</span>
+      <button class="icon-btn" id="closeSidebar" aria-label="Close sidebar">✕</button>
+    </div>
+    <nav class="app-sidebar-nav">
+      <a href="landing.html" class="sidebar-link">🏠 Home</a>
+      <a href="chat.html" class="sidebar-link">💬 Chat</a>
+      <a href="documents.html" class="sidebar-link">📄 Documents</a>
+      <a href="profile.html" class="sidebar-link active">👤 Profile</a>
+      <a href="settings.html" class="sidebar-link">⚙️ Settings</a>
+    </nav>
+    <div class="app-sidebar-footer">
+      <button class="sidebar-link logout-link" id="sidebarLogoutBtn">🚪 Logout</button>
+    </div>
+  </aside>
+
+  <!-- ============ TOP NAVBAR ============ -->
+  <header class="topnav">
+    <div class="topnav-left">
+      <button class="icon-btn" id="openSidebar" aria-label="Open sidebar">☰</button>
+      <span class="logo">StudyBot</span>
+    </div>
+    <div class="topnav-right">
+      <button class="icon-btn" id="themeToggle" aria-label="Toggle light/dark theme" aria-pressed="false">🌙</button>
+      <div class="profile-menu-wrapper">
+        <button class="profile-icon-btn" id="profileIconBtn" aria-label="Open profile menu">👤</button>
+        <div class="profile-dropdown hidden" id="profileDropdown">
+          <a href="profile.html">View Profile</a>
+          <button id="logoutBtn">Logout</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="profile-page">
+
+    <!-- ============ PROFILE CARD ============ -->
+    <section class="profile-card">
+      <div class="profile-avatar" id="profileAvatar">JD</div>
+
+      <div class="profile-info">
+        <div class="field-group">
+          <label for="profileName">Full Name</label>
+          <input type="text" id="profileName" minlength="3" maxlength="15" disabled />
+          <span class="field-error" id="profileNameError"></span>
+        </div>
+
+        <div class="field-group">
+          <label for="profileEmail">
+            Email
+            <span class="locked-note" title="Email is your unique account identifier and can't be changed">🔒 Locked</span>
+          </label>
+          <input type="email" id="profileEmail" disabled />
+        </div>
+      </div>
+
+      <div class="profile-card-actions">
+        <button class="btn-ghost" id="editProfileBtn">Edit</button>
+        <button class="btn-primary hidden" id="saveProfileBtn">Save</button>
+        <button class="btn-ghost hidden" id="cancelProfileBtn">Cancel</button>
+      </div>
+      <div class="inline-feedback hidden" id="profileFeedback" role="status"></div>
+    </section>
+
+    <!-- ============ ACCOUNT STATS ============ -->
+    <section class="stats-card">
+      <div class="stat-item">
+        <span class="stat-value" id="statDocCount">0</span>
+        <span class="stat-label">Documents Uploaded</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value" id="statBinCount">0</span>
+        <span class="stat-label">In Recycle Bin</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value">Free</span>
+        <span class="stat-label">Current Plan</span>
+      </div>
+    </section>
+
+    <!-- ============ CHANGE PASSWORD ============ -->
+    <section class="settings-card">
+      <h2>Change Password</h2>
+
+      <div class="form-error hidden" id="passwordChangeError" role="alert"></div>
+      <div class="form-success hidden" id="passwordChangeSuccess" role="status">Password updated successfully.</div>
+
+      <form id="changePasswordForm" novalidate>
+        <div class="field-group">
+          <label for="currentPassword">Current Password</label>
+          <div class="password-field">
+            <input type="password" id="currentPassword" placeholder="••••••••" required />
+            <button type="button" class="password-toggle" id="toggleCurrentPassword" aria-label="Show password">👁</button>
+          </div>
+          <span class="field-error" id="currentPasswordError"></span>
+        </div>
+
+        <div class="field-group">
+          <label for="newPassword">New Password</label>
+          <div class="password-field">
+            <input type="password" id="newPassword" placeholder="••••••••" required aria-describedby="newPasswordStrengthText" />
+            <button type="button" class="password-toggle" id="toggleNewPassword" aria-label="Show password">👁</button>
+          </div>
+          <div class="password-strength" id="newPasswordStrength">
+            <div class="strength-bars">
+              <span class="bar" data-bar="1"></span>
+              <span class="bar" data-bar="2"></span>
+              <span class="bar" data-bar="3"></span>
+            </div>
+            <span class="strength-text" id="newPasswordStrengthText">Min 8 characters, at least 1 letter &amp; 1 number</span>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label for="confirmNewPassword">Confirm New Password</label>
+          <div class="password-field">
+            <input type="password" id="confirmNewPassword" placeholder="••••••••" required />
+            <button type="button" class="password-toggle" id="toggleConfirmNewPassword" aria-label="Show password">👁</button>
+          </div>
+          <span class="field-error" id="confirmNewPasswordError"></span>
+        </div>
+
+        <button type="submit" class="btn-primary" id="changePasswordBtn">Update Password</button>
+      </form>
+    </section>
+
+    <!-- ============ DANGER ZONE ============ -->
+    <section class="danger-zone" id="danger-zone">
+      <h2>Danger Zone</h2>
+      <p>Deleting your account permanently removes your profile, documents, and chat history. This can't be undone.</p>
+      <button class="btn-danger" id="deleteAccountBtn">Delete Account</button>
+    </section>
+
+  </main>
+
+  <!-- ============ DELETE ACCOUNT CONFIRMATION MODAL ============ -->
+  <div class="modal-overlay hidden" id="deleteModalOverlay">
+    <div class="modal-card">
+      <h2>Delete your account?</h2>
+      <p>This will permanently delete your profile, all uploaded documents, and your chat history. This action cannot be undone.</p>
+      <p class="modal-confirm-instruction">Type <strong>DELETE</strong> below to confirm.</p>
+      <input type="text" id="deleteConfirmInput" placeholder="Type DELETE" autocomplete="off" />
+      <div class="modal-actions">
+        <button class="btn-ghost" id="cancelDeleteBtn">Cancel</button>
+        <button class="btn-danger" id="confirmDeleteBtn" disabled>Delete Account</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ FLOATING CHAT BUTTON ============ -->
+  <a href="chat.html" class="fab-chat-btn" aria-label="Go to chat">💬</a>
+
+  <script src="js/config.js"></script>
+  <script src="js/theme.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/profile.js"></script>
+</body>
+</html>

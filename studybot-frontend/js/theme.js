@@ -10,6 +10,7 @@ function applyTheme(theme) {
   document.documentElement.setAttribute("data-theme", theme);
   localStorage.setItem("studybot-theme", theme);
   updateToggleIcons(theme);
+  window.dispatchEvent(new CustomEvent("studybot:themechange", { detail: { theme } }));
 }
 
 function updateToggleIcons(theme) {
