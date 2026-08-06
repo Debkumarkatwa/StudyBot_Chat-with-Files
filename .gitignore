@@ -3,3 +3,4 @@ Test/
 __pycache__/
 .env
 *.pdf
+**\__init__.py
