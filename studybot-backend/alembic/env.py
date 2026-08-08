@@ -16,7 +16,7 @@ from app.database import Base  # noqa: E402
 # We'll add these import lines as we create each model, e.g.:
 
 from app.models.user import User
-from app.models.documents import Document
+from app.models.document import Document
 from app.models.chunk import Chunk
 
 load_dotenv()

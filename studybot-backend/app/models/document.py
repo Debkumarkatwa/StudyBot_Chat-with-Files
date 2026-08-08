@@ -12,6 +12,7 @@ from app.database import Base
 class DocumentStatus(str, enum.Enum):
     processing = "processing"
     active = "active"
+    failed = "failed"
     deleted = "deleted"
 
 
