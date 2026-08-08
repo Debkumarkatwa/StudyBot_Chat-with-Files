@@ -4,6 +4,8 @@ This is the container of my Project "StudyBot". You will get everything about th
 # Run The Server
 uvicorn app.main:app --reload
 
+# Run The Test Scripts
+python -m Test.filename ( From Backend Folder `ex -> [python -m Test.test_jwt]`)
 
 # StudyBot Backend — Development Checkpoint
 
