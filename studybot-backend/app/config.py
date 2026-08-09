@@ -17,6 +17,8 @@ MAX_FILE_SIZE: int = int(os.getenv("MAX_FILE_SIZE_MB", '10485760')) # Default 10
 
 MAX_ACTIVE_DOCUMENTS: int = int(os.getenv("MAX_ACTIVE_DOCUMENTS", "3"))
 
+MAX_BIN_DOCUMENTS: int = int(os.getenv("MAX_BIN_DOCUMENTS", "5"))
+
 RECYCLE_BIN_RETENTION_DAYS: int = int(os.getenv("RECYCLE_BIN_RETENTION_DAYS", "7"))
 
 CHUNK_SIZE_TOKENS: int = int(os.getenv("CHUNK_SIZE_TOKENS", "400"))

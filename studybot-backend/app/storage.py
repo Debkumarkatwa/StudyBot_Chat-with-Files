@@ -24,7 +24,7 @@ def build_storage_path(owner_id: uuid.UUID, filename: str) -> str:
     a file with the same name never overwrites the original.
     """
     unique_prefix = uuid.uuid4().hex
-    safe_filename = filename.replace(" ", "_")
+    safe_filename = os.path.basename(filename).replace(" ", "_")
     return f"{owner_id}/{unique_prefix}_{safe_filename}"
 
 

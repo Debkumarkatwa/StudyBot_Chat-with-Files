@@ -15,7 +15,31 @@ const API = {
   _CURRENT_USER_KEY: "studybot-current-user",
   _TOKEN_KEY: "studybot-auth-token",
   _BIN_MAX: CONFIG.MAX_BIN_FILES,
-  _BIN_RETENTION_DAYS: 7,
+  _BIN_RETENTION_DAYS: CONFIG.BIN_RETENTION_DAYS,
+  _REFRESH_TOKEN_KEY: "studybot-refresh-token",
+
+  async _apiFetch(path, options = {}) {
+    const token = localStorage.getItem(this._TOKEN_KEY);
+    const headers = {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers || {}),
+    };
+
+    const res = await fetch(`${CONFIG.API_BASE_URL}${path}`, { ...options, headers });
+
+    if (!res.ok) {
+      let detail = "Something went wrong. Please try again.";
+      try {
+        const body = await res.json();
+        detail = body.detail || detail;
+      } catch { /* non-JSON error body, keep default message */ }
+      throw new Error(detail);
+    }
+
+    if (res.status === 204) return null; // no body to parse (matches your DELETE routes)
+    return res.json();
+  },
 
   _readStore(key) {
     try {
@@ -41,14 +65,16 @@ const API = {
       return null;
     }
   },
-  _writeAuthState(value) {
+ _writeAuthState(value) {
     localStorage.setItem(this._CURRENT_USER_KEY, JSON.stringify(value));
     localStorage.setItem(this._TOKEN_KEY, value.token);
+    if (value.refreshToken) localStorage.setItem(this._REFRESH_TOKEN_KEY, value.refreshToken);
     this.dispatchAppEvent("studybot:authchange", { authenticated: true });
   },
   _clearAuthState() {
     localStorage.removeItem(this._CURRENT_USER_KEY);
     localStorage.removeItem(this._TOKEN_KEY);
+    localStorage.removeItem(this._REFRESH_TOKEN_KEY);
     this.dispatchAppEvent("studybot:authchange", { authenticated: false });
   },
   _readAccounts() {
@@ -282,78 +308,33 @@ const API = {
   },
 
   async signup(fullName, email, password) {
-    // TODO: replace with real call once backend exists
-    // const res = await fetch(`${CONFIG.API_BASE_URL}/auth/signup`, {
-    //   method: "POST",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify({ fullName, email, password }),
-    // });
-    // if (!res.ok) throw new Error((await res.json()).message || "Signup failed");
-    // return res.json();
-
-    // --- MOCK ---
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const accounts = this._readAccounts();
-        if (accounts.some((account) => account.email.toLowerCase() === email.toLowerCase())) {
-          reject(new Error("An account with this email already exists."));
-          return;
-        }
-
-        const account = {
-          id: `user-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-          name: fullName,
-          email,
-          password,
-          token: this._createToken(),
-        };
-
-        accounts.push(account);
-        this._writeAccounts(accounts);
-        this._setSessionFromAccount(account);
-        resolve({ success: true, token: account.token, user: { name: fullName, email } });
-      }, 700);
+    await this._apiFetch("/auth/signup", {
+      method: "POST",
+      body: JSON.stringify({ email, password, full_name: fullName }),
     });
+    // Signup doesn't return tokens (backend design) — log in immediately after.
+    return this.login(email, password);
   },
 
-  async login(email, password) {
-    // TODO: replace with real call once backend exists
-    // const res = await fetch(`${CONFIG.API_BASE_URL}/auth/login`, {
-    //   method: "POST",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify({ email, password }),
-    // });
-    // if (!res.ok) throw new Error((await res.json()).message || "Login failed");
-    // return res.json();
-
-    // --- MOCK ---
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const accounts = this._readAccounts();
-        const existingAccount = accounts.find((account) => account.email.toLowerCase() === email.toLowerCase());
-
-        if (existingAccount && existingAccount.password && existingAccount.password !== password) {
-          reject(new Error("Invalid email or password."));
-          return;
-        }
-
-        const account = existingAccount || {
-          id: `user-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-          name: this._formatDisplayName(email),
-          email,
-          password,
-          token: this._createToken(),
-        };
-
-        if (!existingAccount) {
-          accounts.push(account);
-          this._writeAccounts(accounts);
-        }
-
-        const session = this._setSessionFromAccount(account);
-        resolve({ success: true, token: session.token, user: { name: session.name, email: session.email } });
-      }, 700);
+async login(email, password) {
+    const tokens = await this._apiFetch("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
     });
+
+    localStorage.setItem(this._TOKEN_KEY, tokens.access_token); // set before /me call, _apiFetch needs it
+
+    const user = await this._apiFetch("/auth/me", { method: "GET" }); // to get the user details like name, avater etc.
+
+    const session = {
+      id: user.id,
+      name: user.full_name || this._formatDisplayName(user.email),
+      email: user.email,
+      token: tokens.access_token,
+      refreshToken: tokens.refresh_token,
+    };
+    this._writeAuthState(session);
+    return { success: true, token: session.token, user: { name: session.name, email: session.email } };
   },
 
   async requestPasswordReset(email) {
@@ -364,8 +345,7 @@ const API = {
   },
 
   async logout() {
-    // TODO: POST /auth/logout, clear stored token
     this._clearAuthState();
-    return new Promise((resolve) => resolve({ success: true }));
+    return { success: true };
   },
 };

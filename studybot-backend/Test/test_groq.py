@@ -4,7 +4,7 @@ Run from the `backend/` folder: python Test/test_groq.py
 """
 
 from groq import Groq
-from app.config import GROQ_API_KEY
+from app.config import GROQ_API_KEY, GROQ_MODEL_NAME
 
 
 def main():
@@ -13,7 +13,7 @@ def main():
     print("Sending test request to Groq...")
 
     response = client.chat.completions.create(
-        model="llama-3.1-8b-instant",
+        model=GROQ_MODEL_NAME,
         messages=[
             {"role": "user", "content": "Say 'StudyBot backend connected successfully' and nothing else."}
         ],
