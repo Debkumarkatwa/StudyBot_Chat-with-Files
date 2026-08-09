@@ -119,47 +119,28 @@ const API = {
   },
 
   async updateProfileName(name) {
+    const user = await this._apiFetch("/auth/me", {
+      method: "PATCH",
+      body: JSON.stringify({ full_name: name }),
+    });
     const session = this._readAuthState();
-    if (!session) throw new Error("No active session.");
-
-    const accounts = this._readAccounts();
-    const accountIndex = accounts.findIndex((account) => account.email === session.email);
-    const updatedSession = { ...session, name };
-
-    if (accountIndex !== -1) {
-      accounts[accountIndex] = { ...accounts[accountIndex], name };
-      this._writeAccounts(accounts);
-    }
-
-    this._writeAuthState(updatedSession);
-    return { success: true, user: { name, email: session.email } };
+    this._writeAuthState({ ...session, name: user.full_name });
+    return { success: true, user: { name: user.full_name, email: user.email } };
   },
 
   async changePassword(currentPassword, newPassword) {
-    const session = this._readAuthState();
-    if (!session) throw new Error("No active session.");
-
-    const accounts = this._readAccounts();
-    const accountIndex = accounts.findIndex((account) => account.email === session.email);
-    if (accountIndex !== -1 && accounts[accountIndex].password && accounts[accountIndex].password !== currentPassword) {
-      throw new Error("Current password is incorrect.");
-    }
-
-    if (accountIndex !== -1) {
-      accounts[accountIndex] = { ...accounts[accountIndex], password: newPassword };
-      this._writeAccounts(accounts);
-    }
-
-    this._writeAuthState({ ...session, password: newPassword });
+    await this._apiFetch("/auth/change-password", {
+      method: "POST",
+      body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+    });
     return { success: true };
   },
 
-  async deleteAccount() {
-    const session = this._readAuthState();
-    if (!session) throw new Error("No active session.");
-
-    const accounts = this._readAccounts().filter((account) => account.email !== session.email);
-    this._writeAccounts(accounts);
+  async deleteAccount(password) {
+    await this._apiFetch("/auth/me", {
+      method: "DELETE",
+      body: JSON.stringify({ password }),
+    });
     this._clearAuthState();
     return { success: true };
   },
@@ -339,9 +320,9 @@ async login(email, password) {
 
   async requestPasswordReset(email) {
     // TODO: POST /auth/forgot-password
-    return new Promise((resolve) => {
-      setTimeout(() => resolve({ success: true }), 700);
-    });
+    // Intentionally not wired to a backend — no email service exists yet.
+    // forgot-password.html already tells the user this is a mock.
+    return { success: true };
   },
 
   async logout() {

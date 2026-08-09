@@ -5,8 +5,10 @@ from sqlalchemy import select
 
 from app.database import get_db
 from app.models.user import User
-from app.schemas.user import UserSignup, UserLogin, UserResponse, TokenResponse, RefreshRequest
+from app.models.document import Document
+from app.schemas.user import UserSignup, UserLogin, UserResponse, TokenResponse, RefreshRequest, UpdateNameRequest, ChangePasswordRequest, DeleteAccountRequest
 from app.security import hash_password, verify_password
+from app.storage import delete_file
 from app.jwt_utils import create_access_token, create_refresh_token, decode_token
 import jwt as pyjwt
 
@@ -88,3 +90,61 @@ async def refresh(payload: RefreshRequest):
 @router.get("/me", response_model=UserResponse)
 async def read_current_user(current_user: User = Depends(get_current_user)):
     return current_user
+
+
+@router.patch("/me", response_model=UserResponse)
+async def update_name(
+    payload: UpdateNameRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    current_user.full_name = payload.full_name
+    await db.commit()
+    await db.refresh(current_user)
+    return current_user
+
+
+@router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)
+async def change_password(
+    payload: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if not verify_password(payload.current_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Current password is incorrect.",
+        )
+
+    current_user.hashed_password = hash_password(payload.new_password)
+    await db.commit()
+
+
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_account(
+    payload: DeleteAccountRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if not verify_password(payload.password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Password is incorrect.",
+        )
+
+    # Clean up storage files BEFORE deleting the user row — once the user
+    # row is gone, Document rows cascade-delete automatically (FK
+    # ondelete="CASCADE"), and we'd lose the storage_path values needed
+    # to clean up the actual files in Supabase.
+    result = await db.execute(select(Document).where(Document.owner_id == current_user.id))
+    documents = result.scalars().all()
+    for document in documents:
+        try:
+            delete_file(document.storage_path)
+        except Exception:
+            # Don't let one bad storage delete block account deletion —
+            # an orphaned file is recoverable manually, a stuck delete isn't.
+            pass
+
+    await db.delete(current_user)  # documents + chunks cascade automatically
+    await db.commit()

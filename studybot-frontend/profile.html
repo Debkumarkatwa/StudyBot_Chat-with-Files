@@ -25,11 +25,10 @@
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
   <aside class="app-sidebar" id="appSidebar">
     <div class="app-sidebar-header">
-      <span class="logo">StudyBot</span>
+      <a href="landing.html" class="logo logo-link" aria-label="Go to home page">StudyBot</a>
       <button class="icon-btn" id="closeSidebar" aria-label="Close sidebar">✕</button>
     </div>
     <nav class="app-sidebar-nav">
-      <a href="landing.html" class="sidebar-link">🏠 Home</a>
       <a href="chat.html" class="sidebar-link">💬 Chat</a>
       <a href="documents.html" class="sidebar-link">📄 Documents</a>
       <a href="profile.html" class="sidebar-link active">👤 Profile</a>
@@ -44,7 +43,7 @@
   <header class="topnav">
     <div class="topnav-left">
       <button class="icon-btn" id="openSidebar" aria-label="Open sidebar">☰</button>
-      <span class="logo">StudyBot</span>
+      <a href="landing.html" class="logo logo-link" aria-label="Go to home page">StudyBot</a>
     </div>
     <div class="topnav-right">
       <button class="icon-btn" id="themeToggle" aria-label="Toggle light/dark theme" aria-pressed="false">🌙</button>
@@ -65,7 +64,7 @@
       <div class="profile-avatar" id="profileAvatar">JD</div>
 
       <div class="profile-info">
-        <div class="field-group">
+        <div class="field-group" style="margin: 0;">
           <label for="profileName">Full Name</label>
           <input type="text" id="profileName" minlength="3" maxlength="15" disabled />
           <span class="field-error" id="profileNameError"></span>
@@ -164,6 +163,13 @@
     <div class="modal-card">
       <h2>Delete your account?</h2>
       <p>This will permanently delete your profile, all uploaded documents, and your chat history. This action cannot be undone.</p>
+
+      <div class="field-group">
+        <p class="modal-confirm-instruction" for="deleteConfirmPassword"><strong>Enter your password</strong></p>
+        <input type="password" id="deleteConfirmPassword" placeholder="••••••••" autocomplete="current-password" />
+        <span class="field-error" id="deleteConfirmPasswordError"></span>
+      </div>
+
       <p class="modal-confirm-instruction">Type <strong>DELETE</strong> below to confirm.</p>
       <input type="text" id="deleteConfirmInput" placeholder="Type DELETE" autocomplete="off" />
       <div class="modal-actions">

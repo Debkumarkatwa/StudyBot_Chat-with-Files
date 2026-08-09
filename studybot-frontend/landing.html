@@ -27,10 +27,29 @@
 </head>
 <body>
 
+  <!-- ============ SLIDING APP SIDEBAR ============ -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <aside class="app-sidebar" id="appSidebar">
+    <div class="app-sidebar-header">
+      <a href="landing.html" class="logo logo-link" aria-label="Go to home page">StudyBot</a>
+      <button class="icon-btn" id="closeSidebar" aria-label="Close sidebar">✕</button>
+    </div>
+    <nav class="app-sidebar-nav">
+      <a href="chat.html" class="sidebar-link">💬 Chat</a>
+      <a href="documents.html" class="sidebar-link">📄 Documents</a>
+      <a href="profile.html" class="sidebar-link">👤 Profile</a>
+      <a href="settings.html" class="sidebar-link">⚙️ Settings</a>
+    </nav>
+    <div class="app-sidebar-footer">
+      <button class="sidebar-link logout-link" id="sidebarLogoutBtn">🚪 Logout</button>
+    </div>
+  </aside>
+
   <!-- ============ TOP NAVBAR ============ -->
   <header class="topnav">
     <div class="topnav-left">
-      <span class="logo">StudyBot</span>
+      <button class="icon-btn" id="openSidebar" aria-label="Open sidebar">☰</button>
+      <a href="landing.html" class="logo logo-link" aria-label="Go to home page">StudyBot</a>
     </div>
 
     <!-- Logged OUT state -->
@@ -62,7 +81,7 @@
         no more scrolling through 40-page PDFs before an exam.
       </p>
       <div class="hero-actions">
-        <a href="signup.html" class="btn-primary btn-lg">Get Started Free</a>
+        <a href="signup.html" class="btn-primary btn-lg" id="heroCtaBtn">Get Started Free</a>
         <a href="#how-it-works" class="btn-ghost btn-lg">See How It Works</a>
       </div>
     </section>
@@ -123,7 +142,7 @@
 
   <!-- ============ FOOTER ============ -->
   <footer class="site-footer">
-    <span class="logo">StudyBot</span>
+    <a href="landing.html" class="logo logo-link" aria-label="Go to home page">StudyBot</a>
     <p>Built for students who'd rather ask than scroll.</p>
     <div class="footer-links">
       <a href="#how-it-works">How It Works</a>

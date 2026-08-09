@@ -283,12 +283,16 @@ const deleteModalOverlay = document.getElementById("deleteModalOverlay");
 const deleteConfirmInput = document.getElementById("deleteConfirmInput");
 const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
 const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
+const deleteConfirmPasswordInput = document.getElementById("deleteConfirmPassword");
+const deleteConfirmPasswordError = document.getElementById("deleteConfirmPasswordError");
 
 deleteAccountBtn.addEventListener("click", () => {
   deleteModalOverlay.classList.remove("hidden");
   deleteConfirmInput.value = "";
+  deleteConfirmPasswordInput.value = "";
+  setFieldError(deleteConfirmPasswordInput, deleteConfirmPasswordError, "");
   confirmDeleteBtn.disabled = true;
-  deleteConfirmInput.focus();
+  deleteConfirmPasswordInput.focus();
 });
 
 cancelDeleteBtn.addEventListener("click", () => {
@@ -299,22 +303,34 @@ deleteModalOverlay.addEventListener("click", (e) => {
   if (e.target === deleteModalOverlay) deleteModalOverlay.classList.add("hidden");
 });
 
-deleteConfirmInput.addEventListener("input", () => {
-  confirmDeleteBtn.disabled = deleteConfirmInput.value !== "DELETE";
+function updateDeleteButtonState() {
+  confirmDeleteBtn.disabled = deleteConfirmInput.value !== "DELETE" || !deleteConfirmPasswordInput.value;
+}
+deleteConfirmInput.addEventListener("input", updateDeleteButtonState);
+deleteConfirmPasswordInput.addEventListener("input", () => {
+  if (deleteConfirmPasswordError.textContent) {
+    setFieldError(deleteConfirmPasswordInput, deleteConfirmPasswordError, "");
+  }
+  updateDeleteButtonState();
 });
 
 confirmDeleteBtn.addEventListener("click", async () => {
+  setFieldError(deleteConfirmPasswordInput, deleteConfirmPasswordError, "");
   confirmDeleteBtn.disabled = true;
   confirmDeleteBtn.textContent = "Deleting...";
   try {
-    await API.deleteAccount();
+    await API.deleteAccount(deleteConfirmPasswordInput.value);
     showProfileFeedback("Your account was deleted.", "success");
     setTimeout(() => {
       window.location.href = "landing.html";
     }, 900);
   } catch (err) {
     console.error("Failed to delete account:", err);
-    showProfileFeedback("Something went wrong while deleting your account.", "error");
+    if (err.message?.toLowerCase().includes("password")) {
+      setFieldError(deleteConfirmPasswordInput, deleteConfirmPasswordError, err.message);
+    } else {
+      showProfileFeedback("Something went wrong while deleting your account.", "error");
+    }
     confirmDeleteBtn.disabled = false;
     confirmDeleteBtn.textContent = "Delete Account";
   }
