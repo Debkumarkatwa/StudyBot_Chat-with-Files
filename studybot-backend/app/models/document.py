@@ -34,6 +34,8 @@ class Document(Base):
     # Reference to the file in Supabase Storage — not the file bytes themselves
     storage_path: Mapped[str] = mapped_column(String(500), nullable=False)
 
+    file_size: Mapped[int] = mapped_column(nullable=False)
+
     status: Mapped[DocumentStatus] = mapped_column(
         SAEnum(DocumentStatus, name="document_status"),
         default=DocumentStatus.processing,

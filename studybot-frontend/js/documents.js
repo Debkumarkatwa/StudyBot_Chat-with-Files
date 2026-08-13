@@ -232,9 +232,7 @@ async function handleFiles(fileListInput) {
     }
 
     const uploaded = await uploadFile(file);
-    if (uploaded) {
-      activeFiles.push({ id: `pending-${Date.now()}`, name: file.name });
-    }
+    if (uploaded) activeFiles.push({ id: `pending-${Date.now()}`, name: file.name });
   }
 
   await refreshAll();
@@ -246,16 +244,9 @@ async function handleFiles(fileListInput) {
 async function uploadFile(file) {
   try {
     const res = await API.uploadFile(file);
-    if (!res.success) {
-      showDocumentsFeedback(`Upload failed for ${file.name}.`, "error");
-      return false;
+    if (res.status === "processing") {
+      API.pollDocumentStatus(res.id).finally(refreshAll);
     }
-
-    // Simulate backend processing/embedding time before marking as ready
-    setTimeout(async () => {
-      await API.markDocumentReady(res.id);
-      await refreshAll();
-    }, 1800);
     return true;
   } catch (err) {
     console.error("Upload failed:", err);
@@ -276,11 +267,7 @@ async function deleteFile(fileId) {
     const confirmed = await openDeleteConfirmModal(targetFile.name, binFiles.length >= CONFIG.MAX_BIN_FILES);
     if (!confirmed) return;
 
-    const res = await API.moveToBin(fileId);
-    if (!res.success) {
-      showDocumentsFeedback("Couldn't delete that file — it may have already been removed.", "error");
-      return;
-    }
+    await API.moveToBin(fileId);
     await refreshAll();
     showDocumentsFeedback("File moved to the Recycle Bin.", "success");
   } catch (err) {
@@ -291,11 +278,7 @@ async function deleteFile(fileId) {
 
 async function deleteBinFile(fileId) {
   try {
-    const res = await API.deleteFromBin(fileId);
-    if (!res.success) {
-      showDocumentsFeedback("Couldn't delete that file from the Recycle Bin.", "error");
-      return;
-    }
+    await API.deleteFromBin(fileId);
     await refreshAll();
     showDocumentsFeedback("File deleted permanently.", "success");
   } catch (err) {
@@ -311,11 +294,7 @@ async function restoreFile(fileId) {
       showDocumentsFeedback(`Your active documents are full (${CONFIG.MAX_FILES} max). Remove one before restoring.`, "error");
       return;
     }
-    const res = await API.restoreFromBin(fileId);
-    if (!res.success) {
-      showDocumentsFeedback("Couldn't restore that file — it may have already expired.", "error");
-      return;
-    }
+    await API.restoreFromBin(fileId);
     await refreshAll();
     showDocumentsFeedback("File restored from the Recycle Bin.", "success");
   } catch (err) {

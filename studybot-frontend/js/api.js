@@ -146,122 +146,94 @@ const API = {
   },
 
   async getActiveDocuments() {
-    // TODO: replace with real call — GET /documents
-    return this._readStore(this._DOCS_KEY);
+    const docs = await this._apiFetch("/documents", { method: "GET" });
+    return docs
+      .filter((d) => d.status !== "deleted")
+      .map((d) => ({
+        id: d.id,
+        name: d.filename,
+        size: d.file_size ?? 0,
+        status: d.status,
+      }));
   },
 
   async getDocuments() {
-    // Used by chat.js's Doc Selector — same data as getActiveDocuments,
-    // kept as a separate method name since chat.js already calls this.
     const docs = await this.getActiveDocuments();
     return { documents: docs.map((d) => ({ id: d.id, name: d.name })) };
   },
 
   async getBinDocuments() {
-    // TODO: replace with real call — GET /documents/bin
-    return this._readStore(this._BIN_KEY);
+    const docs = await this._apiFetch("/documents/bin", { method: "GET" });
+    return docs.map((d) => ({
+      id: d.id,
+      name: d.filename,
+      size: d.file_size ?? 0,
+      deletedAt: new Date(d.deleted_at).getTime(),
+    }));
   },
 
   async uploadFile(file) {
-    // TODO: replace with real call once backend exists
-    // const formData = new FormData();
-    // formData.append("file", file);
-    // const res = await fetch(`${CONFIG.API_BASE_URL}/documents/upload`, {
-    //   method: "POST",
-    //   body: formData,
-    // });
-    // return res.json(); // expect { success, id }
+    const formData = new FormData();
+    formData.append("file", file);
 
-    // --- MOCK: writes into localStorage immediately with status "processing" ---
-    const id = `doc-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-    const docs = this._readStore(this._DOCS_KEY);
-    docs.push({ id, name: file.name, size: file.size, status: "processing" });
-    this._writeStore(this._DOCS_KEY, docs);
-    this.dispatchAppEvent("studybot:documentschange", { action: "uploaded" });
-
-    return new Promise((resolve) => {
-      setTimeout(() => resolve({ success: true, id }), 400);
+    const token = localStorage.getItem(this._TOKEN_KEY);
+    const res = await fetch(`${CONFIG.API_BASE_URL}/documents/upload`, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData, // no Content-Type header — browser sets multipart boundary automatically
     });
+
+    if (!res.ok) {
+      let detail = "Upload failed.";
+      try { detail = (await res.json()).detail || detail; } catch {}
+      throw new Error(detail);
+    }
+
+    const doc = await res.json();
+    this.dispatchAppEvent("studybot:documentschange", { action: "uploaded" });
+    return { success: true, id: doc.id, status: doc.status };
   },
 
-  async markDocumentReady(id) {
-    // Called after the simulated processing delay in documents.js
-    const docs = this._readStore(this._DOCS_KEY);
-    const doc = docs.find((d) => d.id === id);
-    if (doc) doc.status = "ready";
-    this._writeStore(this._DOCS_KEY, docs);
-    this.dispatchAppEvent("studybot:documentschange", { action: "ready" });
-    return { success: true };
+  // Polls GET /documents until the given document's status leaves "processing".
+  // Stops after maxAttempts so a stuck backend job can't poll forever.
+  async pollDocumentStatus(id, { intervalMs = 2500, maxAttempts = 40 } = {}) {
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const docs = await this.getActiveDocuments();
+      const doc = docs.find((d) => d.id === id);
+      if (!doc || doc.status !== "processing") {
+        return doc || null; // gone (e.g. deleted mid-poll) or done processing
+      }
+      await new Promise((resolve) => setTimeout(resolve, intervalMs));
+    }
+    return null; // gave up — caller should just refresh and move on
   },
 
   async moveToBin(id) {
-    // TODO: replace with real call — DELETE /documents/:id (soft delete)
-    let docs = this._readStore(this._DOCS_KEY);
-    const doc = docs.find((d) => d.id === id);
-    if (!doc) return { success: false };
-
-    docs = docs.filter((d) => d.id !== id);
-    this._writeStore(this._DOCS_KEY, docs);
-
-    let bin = this._readStore(this._BIN_KEY);
-    bin.push({ ...doc, deletedAt: Date.now() });
-
-    // Bin holds max 5 — auto-evict oldest if it overflows
-    bin.sort((a, b) => a.deletedAt - b.deletedAt);
-    if (bin.length > this._BIN_MAX) {
-      bin = bin.slice(bin.length - this._BIN_MAX);
-    }
-    this._writeStore(this._BIN_KEY, bin);
+    await this._apiFetch(`/documents/${id}`, { method: "DELETE" });
     this.dispatchAppEvent("studybot:documentschange", { action: "moved-to-bin" });
-
     return { success: true };
   },
 
   async restoreFromBin(id) {
-    // TODO: replace with real call — POST /documents/:id/restore
-    let bin = this._readStore(this._BIN_KEY);
-    const doc = bin.find((d) => d.id === id);
-    if (!doc) return { success: false };
-
-    bin = bin.filter((d) => d.id !== id);
-    this._writeStore(this._BIN_KEY, bin);
-
-    const docs = this._readStore(this._DOCS_KEY);
-    const { deletedAt, ...restored } = doc;
-    docs.push(restored);
-    this._writeStore(this._DOCS_KEY, docs);
+    await this._apiFetch(`/documents/${id}/restore`, { method: "POST" });
     this.dispatchAppEvent("studybot:documentschange", { action: "restored" });
-
     return { success: true };
   },
 
   async deleteFromBin(id) {
-    // TODO: replace with real call — DELETE /documents/bin/:id
-    let bin = this._readStore(this._BIN_KEY);
-    const exists = bin.some((d) => d.id === id);
-    if (!exists) return { success: false };
-
-    bin = bin.filter((d) => d.id !== id);
-    this._writeStore(this._BIN_KEY, bin);
+    await this._apiFetch(`/documents/bin/${id}`, { method: "DELETE" });
     this.dispatchAppEvent("studybot:documentschange", { action: "deleted-from-bin" });
     return { success: true };
   },
 
   async clearBin() {
-    // TODO: replace with real call — DELETE /documents/bin
-    this._writeStore(this._BIN_KEY, []);
+    await this._apiFetch("/documents/bin", { method: "DELETE" });
     this.dispatchAppEvent("studybot:documentschange", { action: "cleared-bin" });
     return { success: true };
   },
 
   async purgeExpiredBinItems() {
-    // TODO: on a real backend this becomes a scheduled job, not a per-request check
-    const msPerDay = 24 * 60 * 60 * 1000;
-    let bin = this._readStore(this._BIN_KEY);
-    const before = bin.length;
-    bin = bin.filter((d) => Date.now() - d.deletedAt < this._BIN_RETENTION_DAYS * msPerDay);
-    if (bin.length !== before) this._writeStore(this._BIN_KEY, bin);
-    this.dispatchAppEvent("studybot:documentschange", { action: "purged-bin" });
+    // No-op now — backend does lazy purge automatically inside GET /documents/bin.
     return { success: true };
   },
 

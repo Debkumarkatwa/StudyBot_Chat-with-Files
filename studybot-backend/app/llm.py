@@ -4,8 +4,8 @@ from app.config import GROQ_API_KEY, HYBRID_MODE_ENABLED, GROQ_MODEL_NAME
 
 client = Groq(api_key=GROQ_API_KEY)
 
-def _build_system_prompt() -> str:
-    if HYBRID_MODE_ENABLED:
+def _build_system_prompt(hybrid: bool) -> str:
+    if hybrid:
         return (
             "You are StudyBot, an assistant that answers questions using the "
             "student's uploaded study documents. Prioritize the provided context "
@@ -26,6 +26,8 @@ def _build_system_prompt() -> str:
     )
 
 
+
+
 def _build_context_block(chunks_with_sources: list[tuple[str, str]]) -> str:
     """chunks_with_sources: list of (chunk_content, filename) tuples."""
     if not chunks_with_sources:
@@ -37,12 +39,8 @@ def _build_context_block(chunks_with_sources: list[tuple[str, str]]) -> str:
     return "\n\n".join(parts)
 
 
-def generate_answer(question: str, chunks_with_sources: list[tuple[str, str]]) -> str:
-    """
-    chunks_with_sources: list of (chunk_content, filename) tuples from retrieval.
-    Returns the LLM's answer as a plain string.
-    """
-    system_prompt = _build_system_prompt()
+def generate_answer(question: str, chunks_with_sources: list[tuple[str, str]], hybrid: bool) -> str:
+    system_prompt = _build_system_prompt(hybrid)
     context_block = _build_context_block(chunks_with_sources)
 
     user_message = (
@@ -56,7 +54,7 @@ def generate_answer(question: str, chunks_with_sources: list[tuple[str, str]]) -
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_message},
         ],
-        temperature=0.3,  # lower = more focused/factual, less creative drift — matters for grounded Q&A
+        temperature=0.3,
     )
 
     return response.choices[0].message.content

@@ -10,30 +10,32 @@ from app.config import CHAT_TOP_K
 
 
 async def retrieve_relevant_chunks(
-    db: AsyncSession, user_id: uuid.UUID, question: str
+    db: AsyncSession,
+    user_id: uuid.UUID,
+    question: str,
+    document_ids: list[uuid.UUID] | None = None,
 ) -> list[tuple[Chunk, str]]:
     """
     Embeds the question and retrieves the top-K most similar chunks,
     scoped STRICTLY to documents owned by user_id with status='active'.
 
-    This scoping is a hard security requirement, not just a quality
-    concern — without it, a user could retrieve chunks from other users'
-    private documents.
-
-    Returns a list of (Chunk, filename) tuples — filename included so
-    the LLM/response can cite which source document each chunk came from.
+    If document_ids is provided, further restricts retrieval to just
+    those documents (still re-checked against owner_id + active status —
+    a user can't scope into someone else's document by passing its id).
     """
     query_embedding = embed_query(question)
 
-    # cosine_distance: pgvector operator, lower = more similar.
-    # Our HNSW index uses vector_cosine_ops, so this matches the index.
+    filters = [
+        Document.owner_id == user_id,
+        Document.status == DocumentStatus.active,
+    ]
+    if document_ids:
+        filters.append(Document.id.in_(document_ids))
+
     result = await db.execute(
         select(Chunk, Document.filename)
         .join(Document, Chunk.document_id == Document.id)
-        .where(
-            Document.owner_id == user_id,
-            Document.status == DocumentStatus.active,
-        )
+        .where(*filters)
         .order_by(Chunk.embedding.cosine_distance(query_embedding))
         .limit(CHAT_TOP_K)
     )

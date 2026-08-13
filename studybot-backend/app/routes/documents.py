@@ -75,7 +75,8 @@ async def upload_document(
         filename=file.filename,
         file_type=file.content_type,
         storage_path=storage_path,
-        status=DocumentStatus.processing,  # will flip to 'active' once parsing/chunking/embedding is done
+        file_size=len(file_bytes),
+        status=DocumentStatus.processing,
     )
     db.add(new_document)
     await db.commit()
