@@ -112,7 +112,34 @@ const API = {
     return Boolean(localStorage.getItem(this._TOKEN_KEY));
   },
 
+  async validateSession() {
+    const token = localStorage.getItem(this._TOKEN_KEY);
+    if (!token) {
+      this._clearAuthState();
+      return false;
+    }
+
+    try {
+      const user = await this._apiFetch("/auth/me", { method: "GET" });
+      const currentSession = this._readAuthState() || {};
+      const refreshedSession = {
+        ...currentSession,
+        id: user.id,
+        name: user.full_name || currentSession.name || this._formatDisplayName(user.email),
+        email: user.email,
+        token,
+      };
+      this._writeAuthState(refreshedSession);
+      return true;
+    } catch (err) {
+      this._clearAuthState();
+      return false;
+    }
+  },
+
   async getCurrentUser() {
+    const valid = await this.validateSession();
+    if (!valid) throw new Error("No active session.");
     const session = this._readAuthState();
     if (!session) throw new Error("No active session.");
     return { name: session.name, email: session.email };
@@ -240,8 +267,15 @@ const API = {
   async sendMessage(message, options = {}) {
     const payload = { question: message };
     if (typeof options.hybrid === "boolean") payload.hybrid = options.hybrid;
-    if (Array.isArray(options.selectedDocIds)) payload.document_ids = options.selectedDocIds;
-    // options.selectedDocIds === "all" (or omitted) -> document_ids stays unset -> backend searches everything
+
+    const selectedDocIds = Array.isArray(options.selectedDocIds)
+      ? options.selectedDocIds.filter(Boolean)
+      : options.selectedDocIds;
+
+    if (Array.isArray(selectedDocIds) && selectedDocIds.length > 0) {
+      payload.document_ids = selectedDocIds;
+    }
+    // Empty / "all" -> omit document_ids so backend searches all active documents.
 
     const res = await this._apiFetch("/chat/ask", {
       method: "POST",

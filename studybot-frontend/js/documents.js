@@ -1,8 +1,10 @@
 // documents.js
 
-if (!API.isAuthenticated()) {
-  window.location.replace("login.html");
-} else {
+(async () => {
+  if (!(await API.validateSession())) {
+    window.location.replace("login.html");
+    return;
+  }
 
 // ===== Sliding sidebar =====
 const appSidebar = document.getElementById("appSidebar");
@@ -469,4 +471,4 @@ async function refreshAll() {
 }
 
 refreshAll();
-}
+})();

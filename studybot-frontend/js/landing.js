@@ -61,7 +61,11 @@ function setLoggedIn(isLoggedIn) {
   }
 }
 
-setLoggedIn(API.isAuthenticated());
-window.addEventListener("studybot:authchange", () => {
-  setLoggedIn(API.isAuthenticated());
+(async function initLandingAuth() {
+  const isLoggedIn = await API.validateSession();
+  setLoggedIn(isLoggedIn);
+})();
+
+window.addEventListener("studybot:authchange", async () => {
+  setLoggedIn(await API.validateSession());
 });

@@ -9,6 +9,14 @@ const closeSidebarBtn = document.getElementById("closeSidebar");
 let hybridMode = localStorage.getItem("studybot-hybrid-default") === "true";
 let selectedDocIds = "all"; // "all" or array of document ids
 
+function normalizeSelectedDocIds(value) {
+  if (value === "all") return "all";
+  if (!Array.isArray(value)) return "all";
+  return value.length === 0 ? "all" : value;
+}
+
+selectedDocIds = normalizeSelectedDocIds(selectedDocIds);
+
 // ===== Hybrid toggle button =====
 const hybridToggleBtn = document.getElementById("hybridToggleBtn");
 
@@ -64,6 +72,13 @@ function handleDocCheckboxChange() {
   const checkboxes = Array.from(docSelectorList.querySelectorAll("input[type=checkbox]"));
   const checked = checkboxes.filter((cb) => cb.checked).map((cb) => cb.value);
 
+  if (checked.length === 0) {
+    selectedDocIds = "all";
+    docSelectAll.checked = true;
+    checkboxes.forEach((cb) => (cb.checked = true));
+    return;
+  }
+
   if (checked.length === checkboxes.length) {
     selectedDocIds = "all";
     docSelectAll.checked = true;
@@ -79,8 +94,9 @@ docSelectAll.addEventListener("change", () => {
     selectedDocIds = "all";
     checkboxes.forEach((cb) => (cb.checked = true));
   } else {
-    selectedDocIds = [];
-    checkboxes.forEach((cb) => (cb.checked = false));
+    selectedDocIds = "all";
+    docSelectAll.checked = true;
+    checkboxes.forEach((cb) => (cb.checked = true));
   }
 });
 
@@ -137,7 +153,6 @@ function setHasDocuments(hasDocuments) {
   chatContainer.classList.toggle("hidden", !hasDocuments);
 }
 
-// ===== Load documents (mocked) =====
 async function loadDocuments() {
   try {
     const res = await API.getDocuments();
@@ -146,7 +161,16 @@ async function loadDocuments() {
     console.error("Failed to load documents:", err);
   }
 }
-loadDocuments();
+
+(async function initChatPage() {
+  const isValidSession = await API.validateSession();
+  if (!isValidSession) {
+    window.location.replace("login.html");
+    return;
+  }
+  await loadDocuments();
+})();
+
 window.addEventListener("studybot:documentschange", () => {
   loadDocuments();
 });
