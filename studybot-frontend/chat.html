@@ -77,6 +77,8 @@
       <form class="chat-input-bar" id="chatForm">
         <div class="input-bar-actions">
           <a href="documents.html" class="icon-action-btn" data-tooltip="Add Document" aria-label="Add Document">+</a>
+          <button type="button" class="icon-action-btn" id="docSelectorBtn" data-tooltip="Choose Documents" aria-label="Choose Documents">📄</button>
+          <button type="button" class="icon-action-btn" id="hybridToggleBtn" data-tooltip="Hybrid Mode" aria-label="Toggle Hybrid Mode" aria-pressed="false">🌐</button>
         </div>
 
         <textarea
@@ -86,6 +88,19 @@
         ></textarea>
         <button type="submit" class="btn-primary" id="sendBtn" aria-label="Send message">Send</button>
       </form>
+
+      <!-- ============ DOCUMENT SELECTOR DROPDOWN ============ -->
+      <div class="doc-selector-dropdown hidden" id="docSelectorDropdown">
+        <div class="doc-selector-header">
+          <span>Search in</span>
+          <button type="button" class="doc-selector-close" id="docSelectorClose" aria-label="Close">✕</button>
+        </div>
+        <label class="doc-selector-option">
+          <input type="checkbox" id="docSelectAll" checked />
+          <span>All documents</span>
+        </label>
+        <div class="doc-selector-list" id="docSelectorList"></div>
+      </div>
     </div>
 
   </main>

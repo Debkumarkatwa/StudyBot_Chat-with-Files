@@ -238,26 +238,21 @@ const API = {
   },
 
   async sendMessage(message, options = {}) {
-    // options: { hybrid: boolean, selectedDocIds: string[] | "all" }
-    // TODO: replace with real call once backend exists
-    // const res = await fetch(`${CONFIG.API_BASE_URL}/chat`, {
-    //   method: "POST",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify({ message, ...options }),
-    // });
-    // return res.json();
+    const payload = { question: message };
+    if (typeof options.hybrid === "boolean") payload.hybrid = options.hybrid;
+    if (Array.isArray(options.selectedDocIds)) payload.document_ids = options.selectedDocIds;
+    // options.selectedDocIds === "all" (or omitted) -> document_ids stays unset -> backend searches everything
 
-    // --- MOCK RESPONSE ---
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          answer: `(mock) You asked: "${message}". Scope: ${
-            options.selectedDocIds === "all" ? "all documents" : (options.selectedDocIds || []).join(", ") || "none selected"
-          }${options.hybrid ? " (hybrid mode on)" : ""}`,
-          source: options.hybrid ? "general_ai" : "document",
-        });
-      }, 700);
+    const res = await this._apiFetch("/chat/ask", {
+      method: "POST",
+      body: JSON.stringify(payload),
     });
+
+    return {
+      answer: res.answer,
+      source: res.hybrid_used ? "general_ai" : "document",
+      sources: res.sources,
+    };
   },
 
   async signup(fullName, email, password) {

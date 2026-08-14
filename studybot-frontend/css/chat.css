@@ -100,6 +100,7 @@
   display: flex;
   flex-direction: column;
   min-height: 0; /* allows chat-messages to scroll within flex parent */
+  position: relative;
 }
 
 .chat-messages {
@@ -203,4 +204,66 @@
 
 .chat-input-bar button {
   height: 42px;
+}
+
+/* ===== Document selector dropdown ===== */
+.doc-selector-dropdown {
+  position: absolute;
+  bottom: 72px;
+  left: 24px;
+  width: 260px;
+  max-height: 300px;
+  overflow-y: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  padding: 10px;
+  z-index: 80;
+}
+
+.doc-selector-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--color-text-dim);
+  font-weight: 600;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.doc-selector-close {
+  background: none;
+  border: none;
+  color: var(--color-text-dim);
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.doc-selector-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 4px;
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+
+.doc-selector-option:hover {
+  background: var(--color-surface-alt);
+}
+
+.doc-selector-list {
+  border-top: 1px solid var(--color-border);
+  margin-top: 6px;
+  padding-top: 6px;
+}
+
+.doc-selector-empty {
+  font-size: 12px;
+  color: var(--color-text-dim);
+  padding: 8px 4px;
 }

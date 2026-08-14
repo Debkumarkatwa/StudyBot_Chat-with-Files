@@ -7,6 +7,97 @@ const openSidebarBtn = document.getElementById("openSidebar");
 const closeSidebarBtn = document.getElementById("closeSidebar");
 
 let hybridMode = localStorage.getItem("studybot-hybrid-default") === "true";
+let selectedDocIds = "all"; // "all" or array of document ids
+
+// ===== Hybrid toggle button =====
+const hybridToggleBtn = document.getElementById("hybridToggleBtn");
+
+function syncHybridButton() {
+  hybridToggleBtn.classList.toggle("active", hybridMode);
+  hybridToggleBtn.setAttribute("aria-pressed", String(hybridMode));
+}
+syncHybridButton();
+
+hybridToggleBtn.addEventListener("click", () => {
+  hybridMode = !hybridMode;
+  syncHybridButton();
+});
+
+// ===== Document selector =====
+const docSelectorBtn = document.getElementById("docSelectorBtn");
+const docSelectorDropdown = document.getElementById("docSelectorDropdown");
+const docSelectorClose = document.getElementById("docSelectorClose");
+const docSelectAll = document.getElementById("docSelectAll");
+const docSelectorList = document.getElementById("docSelectorList");
+
+async function openDocSelector() {
+  const { documents } = await API.getDocuments();
+
+  docSelectorList.innerHTML = "";
+  if (documents.length === 0) {
+    docSelectorList.innerHTML = '<div class="doc-selector-empty">No documents uploaded yet.</div>';
+  } else {
+    documents.forEach((doc) => {
+      const label = document.createElement("label");
+      label.className = "doc-selector-option";
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.value = doc.id;
+      checkbox.checked = selectedDocIds === "all" || selectedDocIds.includes(doc.id);
+      checkbox.addEventListener("change", handleDocCheckboxChange);
+
+      const span = document.createElement("span");
+      span.textContent = doc.name;
+
+      label.appendChild(checkbox);
+      label.appendChild(span);
+      docSelectorList.appendChild(label);
+    });
+  }
+
+  docSelectAll.checked = selectedDocIds === "all";
+  docSelectorDropdown.classList.remove("hidden");
+}
+
+function handleDocCheckboxChange() {
+  const checkboxes = Array.from(docSelectorList.querySelectorAll("input[type=checkbox]"));
+  const checked = checkboxes.filter((cb) => cb.checked).map((cb) => cb.value);
+
+  if (checked.length === checkboxes.length) {
+    selectedDocIds = "all";
+    docSelectAll.checked = true;
+  } else {
+    selectedDocIds = checked;
+    docSelectAll.checked = false;
+  }
+}
+
+docSelectAll.addEventListener("change", () => {
+  const checkboxes = Array.from(docSelectorList.querySelectorAll("input[type=checkbox]"));
+  if (docSelectAll.checked) {
+    selectedDocIds = "all";
+    checkboxes.forEach((cb) => (cb.checked = true));
+  } else {
+    selectedDocIds = [];
+    checkboxes.forEach((cb) => (cb.checked = false));
+  }
+});
+
+docSelectorBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  if (docSelectorDropdown.classList.contains("hidden")) {
+    openDocSelector();
+  } else {
+    docSelectorDropdown.classList.add("hidden");
+  }
+});
+docSelectorClose.addEventListener("click", () => docSelectorDropdown.classList.add("hidden"));
+document.addEventListener("click", (e) => {
+  if (!docSelectorDropdown.contains(e.target) && e.target !== docSelectorBtn) {
+    docSelectorDropdown.classList.add("hidden");
+  }
+});
 
 function openSidebar() {
   appSidebar.classList.add("open");
@@ -152,7 +243,10 @@ let lastUserQuery = null;
 async function sendChatMessage(text) {
   const loadingId = renderLoading();
   try {
-    const res = await API.sendMessage(text);
+    const res = await API.sendMessage(text, {
+      hybrid: hybridMode,
+      selectedDocIds: selectedDocIds,
+    });
     removeLoading(loadingId);
     renderMessage(res.answer, "bot", res.source);
   } catch (err) {
