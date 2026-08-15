@@ -1,4 +1,5 @@
 import uuid
+import asyncio
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,7 +24,7 @@ async def retrieve_relevant_chunks(
     those documents (still re-checked against owner_id + active status —
     a user can't scope into someone else's document by passing its id).
     """
-    query_embedding = embed_query(question)
+    query_embedding = await asyncio.to_thread(embed_query, question)
 
     filters = [
         Document.owner_id == user_id,

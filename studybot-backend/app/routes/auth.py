@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
+import asyncio
 
 from app.database import get_db
 from app.models.user import User
@@ -140,7 +141,7 @@ async def delete_account(
     documents = result.scalars().all()
     for document in documents:
         try:
-            delete_file(document.storage_path)
+            await asyncio.to_thread(delete_file, document.storage_path)
         except Exception:
             # Don't let one bad storage delete block account deletion —
             # an orphaned file is recoverable manually, a stuck delete isn't.

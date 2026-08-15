@@ -26,7 +26,7 @@ async def ask_question(
     )
 
     chunks_with_sources = [(chunk.content, filename) for chunk, filename in results]
-    answer = generate_answer(payload.question, chunks_with_sources, effective_hybrid)
+    answer = await generate_answer(payload.question, chunks_with_sources, effective_hybrid)
 
     sources = [
         SourceInfo(filename=filename, chunk_preview=chunk.content[:150])

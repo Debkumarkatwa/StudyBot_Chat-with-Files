@@ -202,9 +202,14 @@ function renderMessage(text, sender, sourceTag, isLatestBot = false) {
   const el = document.createElement("div");
   el.className = `message ${sender}`;
 
-  const p = document.createElement("p");
-  p.textContent = text;
-  el.appendChild(p);
+  const contentEl = document.createElement("div");
+  contentEl.className = "message-content";
+  if (sender === "bot") {
+    contentEl.innerHTML = DOMPurify.sanitize(marked.parse(text));
+  } else {
+    contentEl.textContent = text;
+  }
+  el.appendChild(contentEl);
 
   if (sourceTag) {
     const tag = document.createElement("span");

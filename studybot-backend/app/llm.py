@@ -1,3 +1,4 @@
+import asyncio
 from groq import Groq
 
 from app.config import GROQ_API_KEY, HYBRID_MODE_ENABLED, GROQ_MODEL_NAME
@@ -39,7 +40,7 @@ def _build_context_block(chunks_with_sources: list[tuple[str, str]]) -> str:
     return "\n\n".join(parts)
 
 
-def generate_answer(question: str, chunks_with_sources: list[tuple[str, str]], hybrid: bool) -> str:
+async def generate_answer(question: str, chunks_with_sources: list[tuple[str, str]], hybrid: bool) -> str:
     system_prompt = _build_system_prompt(hybrid)
     context_block = _build_context_block(chunks_with_sources)
 
@@ -48,7 +49,8 @@ def generate_answer(question: str, chunks_with_sources: list[tuple[str, str]], h
         f"Question: {question}"
     )
 
-    response = client.chat.completions.create(
+    response = await asyncio.to_thread(
+        client.chat.completions.create,
         model=GROQ_MODEL_NAME,
         messages=[
             {"role": "system", "content": system_prompt},

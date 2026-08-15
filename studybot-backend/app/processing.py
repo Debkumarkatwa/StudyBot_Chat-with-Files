@@ -1,5 +1,6 @@
 import uuid
 import logging
+import asyncio
 
 from app.database import AsyncSessionLocal
 from app.models.document import Document, DocumentStatus
@@ -27,18 +28,15 @@ async def process_document_pipeline(document_id: uuid.UUID, file_bytes: bytes, m
     """
     async with AsyncSessionLocal() as db:
         try:
-            # 1. Extract text
-            text = extract_text(file_bytes, mime_type)
+            text = await asyncio.to_thread(extract_text, file_bytes, mime_type)
             if not text.strip():
                 raise ValueError("No text could be extracted from this document.")
 
-            # 2. Chunk
-            chunks = chunk_text(text)
+            chunks = await asyncio.to_thread(chunk_text, text)
             if not chunks:
                 raise ValueError("Document produced zero chunks after splitting.")
 
-            # 3. Embed (batched — one call for all chunks)
-            embeddings = generate_embeddings(chunks)
+            embeddings = await asyncio.to_thread(generate_embeddings, chunks)
 
             # 4. Save Chunk rows
             chunk_rows = [

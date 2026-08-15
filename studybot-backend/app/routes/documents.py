@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, BackgroundTasks, status
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
+import asyncio
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -62,7 +63,7 @@ async def upload_document(
     # --- 4. Upload to Supabase Storage ---
     storage_path = build_storage_path(current_user.id, file.filename)
     try:
-        upload_file(storage_path, file_bytes, file.content_type)
+        await asyncio.to_thread(upload_file, storage_path, file_bytes, file.content_type)
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
@@ -183,7 +184,7 @@ async def delete_from_bin(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found in Recycle Bin.")
 
     try:
-        delete_file(document.storage_path)
+        await asyncio.to_thread(delete_file, document.storage_path)
     except Exception:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
@@ -204,7 +205,7 @@ async def clear_bin(
     )
     for document in result.scalars().all():
         try:
-            delete_file(document.storage_path)
+            await asyncio.to_thread(delete_file, document.storage_path)
         except Exception:
             pass  # bulk clear shouldn't halt on one bad file
         await db.delete(document)
@@ -249,7 +250,7 @@ async def soft_delete_document(
         oldest = oldest_result.scalar_one_or_none()
         if oldest is not None:
             try:
-                delete_file(oldest.storage_path)
+                await asyncio.to_thread(delete_file, oldest.storage_path)
             except Exception:
                 pass
             await db.delete(oldest)
