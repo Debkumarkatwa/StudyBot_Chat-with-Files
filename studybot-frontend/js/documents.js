@@ -59,8 +59,7 @@ const binCountBadge = document.getElementById("binCountBadge");
 const clearBinBtn = document.getElementById("clearBinBtn");
 const uploadOverflowModal = document.getElementById("uploadOverflowModal");
 const uploadOverflowMessage = document.getElementById("uploadOverflowMessage");
-const uploadOverflowConfirm = document.getElementById("uploadOverflowConfirm");
-const uploadOverflowCancel = document.getElementById("uploadOverflowCancel");
+const uploadOverflowAcknowledge = document.getElementById("uploadOverflowAcknowledge");
 const uploadOverflowUpgradeLink = document.getElementById("uploadOverflowUpgradeLink");
 const deleteConfirmModal = document.getElementById("deleteConfirmModal");
 const deleteConfirmMessage = document.getElementById("deleteConfirmMessage");
@@ -105,8 +104,8 @@ function clearDocumentsFeedback() {
 
 let pendingOverflowDecision = null;
 
-function openOverflowModal(oldestFile, incomingFile) {
-  uploadOverflowMessage.innerHTML = `You can keep up to <strong>${CONFIG.MAX_FILES}</strong> documents on the free plan. To upload <strong>${escapeHtml(incomingFile.name)}</strong>, the oldest file <strong>${escapeHtml(oldestFile.name)}</strong> will be <span class="deleted-word">deleted</span> and moved to the Recycle Bin.`;
+function openOverflowModal(incomingFile) {
+  uploadOverflowMessage.innerHTML = `You've reached the limit of <strong>${CONFIG.MAX_FILES}</strong> documents on the free plan. To upload <strong>${escapeHtml(incomingFile.name)}</strong>, delete a document from <strong>My Documents</strong> first, then try uploading again.`;
   uploadOverflowModal.classList.remove("hidden");
 
   return new Promise((resolve) => {
@@ -114,18 +113,17 @@ function openOverflowModal(oldestFile, incomingFile) {
   });
 }
 
-function closeOverflowModal(confirmed) {
+function closeOverflowModal() {
   uploadOverflowModal.classList.add("hidden");
   if (pendingOverflowDecision) {
-    pendingOverflowDecision(confirmed);
+    pendingOverflowDecision();
     pendingOverflowDecision = null;
   }
 }
 
-uploadOverflowConfirm.addEventListener("click", () => closeOverflowModal(true));
-uploadOverflowCancel.addEventListener("click", () => closeOverflowModal(false));
+uploadOverflowAcknowledge.addEventListener("click", () => closeOverflowModal());
 uploadOverflowModal.addEventListener("click", (e) => {
-  if (e.target === uploadOverflowModal) closeOverflowModal(false);
+  if (e.target === uploadOverflowModal) closeOverflowModal();
 });
 uploadOverflowUpgradeLink.addEventListener("click", (e) => {
   e.preventDefault();
@@ -214,6 +212,7 @@ function formatFileSize(bytes) {
 
 async function handleFiles(fileListInput) {
   const activeFiles = await API.getActiveDocuments();
+  let uploadedCount = 0;
 
   for (const file of fileListInput) {
     const ext = "." + file.name.split(".").pop().toLowerCase();
@@ -223,23 +222,20 @@ async function handleFiles(fileListInput) {
     }
 
     if (activeFiles.length >= CONFIG.MAX_FILES) {
-      const oldest = activeFiles[0];
-      const removeOldest = await openOverflowModal(oldest, file);
-      if (removeOldest) {
-        await API.moveToBin(oldest.id);
-        activeFiles.shift();
-      } else {
-        return;
-      }
+      await openOverflowModal(file);
+      continue; // skip this file — no auto-delete, no chained upload
     }
 
     const uploaded = await uploadFile(file);
-    if (uploaded) activeFiles.push({ id: `pending-${Date.now()}`, name: file.name });
+    if (uploaded) {
+      activeFiles.push({ id: `pending-${Date.now()}`, name: file.name });
+      uploadedCount++;
+    }
   }
 
   await refreshAll();
-  if (fileListInput.length > 0) {
-    showDocumentsFeedback(`${fileListInput.length} file${fileListInput.length > 1 ? "s" : ""} processed.`, "success");
+  if (uploadedCount > 0) {
+    showDocumentsFeedback(`${uploadedCount} file${uploadedCount > 1 ? "s" : ""} uploaded.`, "success");
   }
 }
 

@@ -98,17 +98,16 @@
 
   </main>
 
-  <!-- ============ OVERFLOW CONFIRMATION MODAL ============ -->
+  <!-- ============ UPLOAD LIMIT NOTICE MODAL ============ -->
   <div class="overflow-modal hidden" id="uploadOverflowModal" role="dialog" aria-modal="true" aria-labelledby="uploadOverflowTitle">
     <div class="overflow-modal-card">
-      <h3 id="uploadOverflowTitle">Free plan limit reached</h3>
+      <h3 id="uploadOverflowTitle">Document limit reached</h3>
       <p class="overflow-modal-message" id="uploadOverflowMessage"></p>
       <p class="overflow-modal-upgrade">
         Need more storage? <a href="#" id="uploadOverflowUpgradeLink">Upgrade the plan.</a>
       </p>
       <div class="overflow-modal-actions">
-        <button type="button" class="btn-ghost" id="uploadOverflowCancel">Cancel</button>
-        <button type="button" class="btn-primary" id="uploadOverflowConfirm">Delete oldest and continue</button>
+        <button type="button" class="btn-primary" id="uploadOverflowAcknowledge">Got it</button>
       </div>
     </div>
   </div>
