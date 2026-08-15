@@ -13,6 +13,15 @@ ALLOWED_MIME_TYPES: list[str] = [
     if mime.strip()
 ]
 
+ALLOWED_ORIGINS: list[str] = [
+    origin.strip()
+    for origin in os.getenv(
+        "ALLOWED_ORIGINS",
+        "http://127.0.0.1:5500,http://localhost:5500",
+    ).split(",")
+    if origin.strip()
+]
+
 MAX_FILE_SIZE: int = int(os.getenv("MAX_FILE_SIZE_MB", '10485760')) # Default 10 MB
 
 MAX_ACTIVE_DOCUMENTS: int = int(os.getenv("MAX_ACTIVE_DOCUMENTS", "3"))
