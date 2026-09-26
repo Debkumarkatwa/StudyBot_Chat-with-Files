@@ -9,7 +9,7 @@ from pgvector.sqlalchemy import Vector
 from app.database import Base
 
 # Must match the output dimension of BAAI/bge-small-en-v1.5
-EMBEDDING_DIM = 384
+EMBEDDING_DIM = 512
 
 
 class Chunk(Base):

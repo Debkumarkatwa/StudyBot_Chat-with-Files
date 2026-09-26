@@ -198,13 +198,25 @@ chatInput.addEventListener("keydown", (e) => {
 
 let lastBotMessageEl = null;
 
-function renderMessage(text, sender, sourceTag, isLatestBot = false) {
+// Groups the flat sources array by filename, keeping each entry's
+// original 1-based number so it matches the [n] markers in the text.
+function groupSourcesByFilename(sources) {
+  const groups = new Map();
+  sources.forEach((src, i) => {
+    if (!groups.has(src.filename)) groups.set(src.filename, []);
+    groups.get(src.filename).push({ num: i + 1, preview: src.chunk_preview });
+  });
+  return groups;
+}
+
+function renderMessage(text, sender, sourceTag, sources = []) {
   const el = document.createElement("div");
   el.className = `message ${sender}`;
 
   const contentEl = document.createElement("div");
   contentEl.className = "message-content";
   if (sender === "bot") {
+    console.log("RAW:", JSON.stringify(text));
     contentEl.innerHTML = DOMPurify.sanitize(marked.parse(text));
   } else {
     contentEl.textContent = text;
@@ -216,6 +228,33 @@ function renderMessage(text, sender, sourceTag, isLatestBot = false) {
     tag.className = "source-tag";
     tag.textContent = sourceTag === "document" ? "📄 From your documents" : "🌐 General AI knowledge";
     el.appendChild(tag);
+  }
+
+  if (sender === "bot" && sources.length > 0) {
+    const grouped = groupSourcesByFilename(sources);
+    const panel = document.createElement("div");
+    panel.className = "sources-panel hidden";
+
+    grouped.forEach((chunks, filename) => {
+      const group = document.createElement("div");
+      group.className = "sources-panel-group";
+
+      const title = document.createElement("div");
+      title.className = "sources-panel-filename";
+      title.textContent = `📄 ${filename} (${chunks.length} chunk${chunks.length > 1 ? "s" : ""})`;
+      group.appendChild(title);
+
+      chunks.forEach(({ num, preview }) => {
+        const line = document.createElement("div");
+        line.className = "sources-panel-chunk";
+        line.textContent = `[${num}] ${preview}`;
+        group.appendChild(line);
+      });
+
+      panel.appendChild(group);
+    });
+
+    el.appendChild(panel);
   }
 
   if (sender === "bot") {
@@ -244,6 +283,15 @@ function renderMessage(text, sender, sourceTag, isLatestBot = false) {
     regenBtn.textContent = "🔄 Regenerate";
     regenBtn.addEventListener("click", () => regenerateLastResponse());
     actions.appendChild(regenBtn);
+
+    if (sources.length > 0) {
+      const sourcesBtn = document.createElement("button");
+      sourcesBtn.textContent = "🔗 Sources";
+      sourcesBtn.addEventListener("click", () => {
+        el.querySelector(".sources-panel")?.classList.toggle("hidden");
+      });
+      actions.appendChild(sourcesBtn);
+    }
 
     el.appendChild(actions);
     lastBotMessageEl = el;
@@ -277,7 +325,7 @@ async function sendChatMessage(text) {
       selectedDocIds: selectedDocIds,
     });
     removeLoading(loadingId);
-    renderMessage(res.answer, "bot", res.source);
+    renderMessage(res.answer, "bot", res.source, res.sources);
   } catch (err) {
     removeLoading(loadingId);
     renderMessage("Something went wrong. Please try again.", "bot");

@@ -12,7 +12,7 @@ import mimetypes
 
 from app.parsing import extract_text
 from app.chunking import chunk_text, count_tokens
-from app.embeddings import generate_embeddings
+from app.embeddings_jina import generate_embeddings
 
 
 def main():

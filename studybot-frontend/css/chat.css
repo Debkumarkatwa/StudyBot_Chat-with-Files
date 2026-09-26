@@ -382,3 +382,27 @@
   color: var(--color-primary);
   text-decoration: underline;
 }
+
+/* ===== "Sources" toggle panel ===== */
+.sources-panel {
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+}
+.sources-panel-group { margin-bottom: 8px; }
+.sources-panel-group:last-child { margin-bottom: 0; }
+.sources-panel-filename {
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: var(--color-text);
+}
+.sources-panel-chunk {
+  color: var(--color-text-dim);
+  line-height: 1.4;
+  margin-bottom: 4px;
+  padding-left: 8px;
+}
+.sources-panel-chunk:last-child { margin-bottom: 0; }

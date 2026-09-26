@@ -63,6 +63,17 @@
   margin-top: 4px;
 }
 
+.upload-zone.uploading {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.upload-status {
+  color: var(--color-text-dim);
+  font-size: 14px;
+  pointer-events: none;
+}
+
 /* ===== Stacked sections ===== */
 .doc-section {
   margin-bottom: 36px;
@@ -204,6 +215,11 @@
 .status-badge.ready {
   background: rgba(76, 175, 109, 0.15);
   color: #4caf6d;
+}
+
+.status-badge.failed {
+  background: rgba(224, 85, 85, 0.15);
+  color: #e05555;
 }
 
 .status-badge.expiry {

@@ -1,23 +1,8 @@
-import os
 from datetime import datetime, timedelta, timezone
-
 import jwt
-from dotenv import load_dotenv
-
-load_dotenv()
-
-SECRET_KEY = os.getenv("JWT_SECRET_KEY")
-if not SECRET_KEY:
-    raise ValueError("JWT_SECRET_KEY not found. Check your .env file.")
+from app.config import JWT_SECRET_KEY, ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS
 
 ALGORITHM = "HS256"
-
-# Short-lived: limits damage window if a token is ever stolen
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
-
-# Long-lived: lets the user stay logged in without re-entering credentials often
-REFRESH_TOKEN_EXPIRE_DAYS = 7
-
 
 def create_access_token(user_id: str) -> str:
     expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -26,7 +11,7 @@ def create_access_token(user_id: str) -> str:
         "type": "access",
         "exp": expire,
     }
-    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(payload, JWT_SECRET_KEY, algorithm=ALGORITHM)
 
 
 def create_refresh_token(user_id: str) -> str:
@@ -36,7 +21,7 @@ def create_refresh_token(user_id: str) -> str:
         "type": "refresh",
         "exp": expire,
     }
-    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(payload, JWT_SECRET_KEY, algorithm=ALGORITHM)
 
 
 def decode_token(token: str) -> dict:
@@ -46,5 +31,5 @@ def decode_token(token: str) -> dict:
     Caller (the FastAPI dependency) is responsible for catching these
     and turning them into proper 401 responses.
     """
-    payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+    payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[ALGORITHM])
     return payload

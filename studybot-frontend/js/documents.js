@@ -57,6 +57,9 @@ const binList = document.getElementById("binList");
 const emptyBinList = document.getElementById("emptyBinList");
 const binCountBadge = document.getElementById("binCountBadge");
 const clearBinBtn = document.getElementById("clearBinBtn");
+const uploadZoneDefault = document.getElementById("uploadZoneDefault");
+const uploadZoneStatus = document.getElementById("uploadZoneStatus");
+let isUploading = false;
 const uploadOverflowModal = document.getElementById("uploadOverflowModal");
 const uploadOverflowMessage = document.getElementById("uploadOverflowMessage");
 const uploadOverflowAcknowledge = document.getElementById("uploadOverflowAcknowledge");
@@ -69,6 +72,13 @@ const deleteConfirmCancel = document.getElementById("deleteConfirmCancel");
 
 let pendingDeleteDecision = null;
 let pendingDeleteFileId = null;
+
+function setUploadingState(isActive) {
+  isUploading = isActive;
+  uploadZone.classList.toggle("uploading", isActive);
+  uploadZoneDefault.classList.toggle("hidden", isActive);
+  uploadZoneStatus.classList.toggle("hidden", !isActive);
+}
 
 function escapeHtml(value) {
   return String(value)
@@ -179,23 +189,27 @@ clearBinBtn.addEventListener("click", async () => {
 // dialog on the first attempt in some browsers (needs a 2nd try).
 browseLink.addEventListener("click", (e) => {
   e.stopPropagation();
+  if (isUploading) return;
   fileInput.click();
 });
 
 uploadZone.addEventListener("click", (e) => {
   // Only trigger if the click was on the zone itself, not bubbled from browseLink
   if (e.target === browseLink) return;
+  if (isUploading) return;
   fileInput.click();
 });
 
 uploadZone.addEventListener("dragover", (e) => {
   e.preventDefault();
+  if (isUploading) return;
   uploadZone.classList.add("dragover");
 });
 uploadZone.addEventListener("dragleave", () => uploadZone.classList.remove("dragover"));
 uploadZone.addEventListener("drop", (e) => {
   e.preventDefault();
   uploadZone.classList.remove("dragover");
+  if (isUploading) return;
   handleFiles(e.dataTransfer.files);
 });
 fileInput.addEventListener("change", () => {
@@ -211,31 +225,36 @@ function formatFileSize(bytes) {
 }
 
 async function handleFiles(fileListInput) {
-  const activeFiles = await API.getActiveDocuments();
-  let uploadedCount = 0;
+  setUploadingState(true);
+  try {
+    const activeFiles = await API.getActiveDocuments();
+    let uploadedCount = 0;
 
-  for (const file of fileListInput) {
-    const ext = "." + file.name.split(".").pop().toLowerCase();
-    if (!CONFIG.ALLOWED_FILE_TYPES.includes(ext)) {
-      alert(`Unsupported file type: ${ext}`);
-      continue;
+    for (const file of fileListInput) {
+      const ext = "." + file.name.split(".").pop().toLowerCase();
+      if (!CONFIG.ALLOWED_FILE_TYPES.includes(ext)) {
+        alert(`Unsupported file type: ${ext}`);
+        continue;
+      }
+
+      if (activeFiles.length >= CONFIG.MAX_FILES) {
+        await openOverflowModal(file);
+        continue; // skip this file — no auto-delete, no chained upload
+      }
+
+      const uploaded = await uploadFile(file);
+      if (uploaded) {
+        activeFiles.push({ id: `pending-${Date.now()}`, name: file.name });
+        uploadedCount++;
+      }
     }
 
-    if (activeFiles.length >= CONFIG.MAX_FILES) {
-      await openOverflowModal(file);
-      continue; // skip this file — no auto-delete, no chained upload
+    await refreshAll();
+    if (uploadedCount > 0) {
+      showDocumentsFeedback(`${uploadedCount} file${uploadedCount > 1 ? "s" : ""} uploaded.`, "success");
     }
-
-    const uploaded = await uploadFile(file);
-    if (uploaded) {
-      activeFiles.push({ id: `pending-${Date.now()}`, name: file.name });
-      uploadedCount++;
-    }
-  }
-
-  await refreshAll();
-  if (uploadedCount > 0) {
-    showDocumentsFeedback(`${uploadedCount} file${uploadedCount > 1 ? "s" : ""} uploaded.`, "success");
+  } finally {
+    setUploadingState(false);
   }
 }
 
@@ -319,8 +338,12 @@ function renderActiveList(files) {
   files.forEach((file) => {
     const li = document.createElement("li");
     li.className = "file-item";
-    const statusLabel = file.status === "processing" ? "⏳ Processing..." : "✓ Ready";
-    const statusClass = file.status === "processing" ? "processing" : "ready";
+    const statusLabel =
+    file.status === "processing" ? "⏳ Processing..." :
+    file.status === "failed" ? "⚠️ Failed" : "✓ Ready";
+    const statusClass =
+      file.status === "processing" ? "processing" :
+      file.status === "failed" ? "failed" : "ready";
 
     const info = document.createElement("div");
     info.className = "file-item-info";

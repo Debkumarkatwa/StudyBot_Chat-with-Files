@@ -7,7 +7,7 @@ from app.models.document import Document, DocumentStatus
 from app.models.chunk import Chunk
 from app.parsing import extract_text
 from app.chunking import chunk_text
-from app.embeddings import generate_embeddings
+from app.embeddings_jina import generate_embeddings
 from sqlalchemy import select
 
 logger = logging.getLogger(__name__)
@@ -58,12 +58,12 @@ async def process_document_pipeline(document_id: uuid.UUID, file_bytes: bytes, m
             await db.commit()
             logger.info(f"Document {document_id} processed successfully: {len(chunks)} chunks created.")
 
-        except Exception as e:
+        except Exception:
             # Something in the pipeline broke — roll back any partial writes
             # from THIS attempt, then mark the document as failed so it's
             # visible rather than stuck at 'processing' forever.
             await db.rollback()
-            logger.error(f"Document {document_id} processing failed: {e}")
+            logger.exception(f"Document {document_id} processing failed")
 
             result = await db.execute(select(Document).where(Document.id == document_id))
             document = result.scalar_one_or_none()

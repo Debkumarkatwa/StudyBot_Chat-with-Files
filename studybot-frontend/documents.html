@@ -67,11 +67,14 @@
     <div class="inline-feedback hidden" id="documentsFeedback" role="status"></div>
 
     <!-- ============ UPLOAD ZONE ============ -->
-    <div class="upload-zone" id="uploadZone">
+        <div class="upload-zone" id="uploadZone">
       <input type="file" id="fileInput" accept=".pdf,.docx,.pptx,.txt" hidden />
       <span class="upload-icon" aria-hidden="true">📁</span>
-      <p>Drag files here or <span class="link" id="browseLink">browse</span></p>
-      <p class="hint">PDF, DOCX, PPTX, TXT</p>
+      <div id="uploadZoneDefault">
+        <p>Drag files here or <span class="link" id="browseLink">browse</span></p>
+        <p class="hint">PDF, DOCX, PPTX, TXT</p>
+      </div>
+      <p class="upload-status hidden" id="uploadZoneStatus">⏳ Uploading &amp; processing your document...</p>
     </div>
 
     <!-- ============ MY DOCUMENTS SECTION ============ -->

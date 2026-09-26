@@ -1,9 +1,11 @@
+import asyncio
+import logging
+import uuid
+from datetime import datetime, timedelta, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, BackgroundTasks, status
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-import asyncio
-import uuid
-from datetime import datetime, timedelta, timezone
 
 from app.database import get_db
 from app.models.user import User
@@ -13,6 +15,8 @@ from app.dependencies import get_current_user
 from app.storage import build_storage_path, upload_file, delete_file
 from app.config import ALLOWED_MIME_TYPES, MAX_ACTIVE_DOCUMENTS, MAX_FILE_SIZE, MAX_BIN_DOCUMENTS, RECYCLE_BIN_RETENTION_DAYS
 from app.processing import process_document_pipeline
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -83,24 +87,67 @@ async def upload_document(
     await db.commit()
     await db.refresh(new_document)
 
-    # --- 6. Trigger the parse -> chunk -> embed pipeline ---
+    # --- 6. Run the parse -> chunk -> embed pipeline synchronously ---
+    # The request waits for this to fully complete before responding.
+    # Chosen over FastAPI's BackgroundTasks for card-free free-tier hosting
+    # (Render), where the process can sleep on idle — a background task
+    # started right before sleep would be silently killed mid-run, leaving
+    # the document stuck at 'processing' forever with no way to know it
+    # failed. Running synchronously means there's no "in-flight background
+    # work" to lose: the response only returns once the pipeline has
+    # already finished, so a mid-request sleep either finishes the request
+    # normally or fails it outright (visible error, not a silent orphan).
     #
-    # PRIMARY (active): background execution via FastAPI's BackgroundTasks.
-    # The upload request returns immediately with status 'processing';
-    # the user/frontend can poll or refresh to see when it flips to 'active'.
-    # Trade-off: no persistence/retry if the server restarts mid-task —
-    # acceptable at solo-project scale, revisit with a real task queue
-    # (Celery/arq + Redis) if this ever needs to be production-grade.
-    background_tasks.add_task(process_document_pipeline, new_document.id, file_bytes, file.content_type)
+    # Trade-off: upload requests are slower (no fire-and-forget), and the
+    # frontend never actually sees a 'processing' status from THIS call —
+    # the document comes back as already 'active' or 'failed'.
+    try:
+        await process_document_pipeline(new_document.id, file_bytes, file.content_type)
+    except Exception:
+        # process_document_pipeline already has its OWN try/except that
+        # normally catches pipeline errors (bad parse, embedding API
+        # failure, etc.) and flips status -> failed using its own DB
+        # session. This outer catch is a safety net for failures OUTSIDE
+        # that inner handling — e.g. the pipeline's own DB session failing
+        # to even open (a transient Neon connection blip) — which would
+        # otherwise leave this document stuck at 'processing' forever with
+        # an orphaned file sitting in Supabase Storage.
+        logger.exception(
+            f"process_document_pipeline crashed outside its own error handling "
+            f"for document {new_document.id}"
+        )
 
-    # ALTERNATIVE (commented out): synchronous execution.
-    # Uncomment this line and comment out the background_tasks line above
-    # to switch to synchronous processing — the upload request will then
-    # wait until parsing/chunking/embedding fully completes before
-    # returning a response (document will come back as 'active' or
-    # 'failed' immediately, never 'processing').
-    #
-    # await process_document_pipeline(new_document.id, file_bytes, file.content_type)
+        # Best-effort: mark the document failed using THIS request's own
+        # DB session, so it doesn't stay stuck at 'processing'.
+        try:
+            new_document.status = DocumentStatus.failed
+            await db.commit()
+        except Exception:
+            logger.exception(
+                f"Could not mark document {new_document.id} as failed after pipeline crash"
+            )
+
+        # Best-effort: clean up the orphaned Supabase file so it doesn't
+        # linger with no usable DB record pointing at it.
+        try:
+            await asyncio.to_thread(delete_file, storage_path)
+        except Exception:
+            logger.exception(
+                f"Could not clean up orphaned storage file for document {new_document.id}"
+            )
+
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Document processing failed. Please try uploading again.",
+        )
+
+    # MANDATORY when running synchronously: process_document_pipeline uses
+    # its OWN DB session (see processing.py) to flip status -> active/failed.
+    # `new_document` here is still bound to THIS request's session, which
+    # doesn't know about that write. Without this refresh, the API response
+    # would incorrectly report status: "processing" even though the DB
+    # already has "active" or "failed".
+    await db.refresh(new_document)
 
     return new_document
 

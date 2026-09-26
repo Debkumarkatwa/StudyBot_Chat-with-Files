@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.chunk import Chunk
 from app.models.document import Document, DocumentStatus
-from app.embeddings import embed_query
+from app.embeddings_jina import embed_query
 from app.config import CHAT_TOP_K
 
 

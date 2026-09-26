@@ -1,17 +1,15 @@
-import os
-from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import declarative_base
 
-load_dotenv()
+from app.config import DATABASE_URL, SQL_ECHO
 
-DATABASE_URL = os.getenv("DATABASE_URL")
-
-if not DATABASE_URL:
-    raise ValueError("DATABASE_URL not found. Check your .env file.")
-
-# echo=True logs every SQL statement — useful while building, turn off later
-engine = create_async_engine(DATABASE_URL, echo=True)
+engine = create_async_engine(
+    DATABASE_URL,
+    echo=SQL_ECHO,
+    pool_pre_ping=True,
+    pool_recycle=300,
+    connect_args={"statement_cache_size": 0},  # while you're in here — this is bug #1, add it now
+)
 
 AsyncSessionLocal = async_sessionmaker(
     bind=engine,

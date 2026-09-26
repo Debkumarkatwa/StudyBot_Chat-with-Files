@@ -29,7 +29,7 @@ class Document(Base):
 
     filename: Mapped[str] = mapped_column(String(255), nullable=False)
 
-    file_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    file_type: Mapped[str] = mapped_column(String(255), nullable=False)
 
     # Reference to the file in Supabase Storage — not the file bytes themselves
     storage_path: Mapped[str] = mapped_column(String(500), nullable=False)

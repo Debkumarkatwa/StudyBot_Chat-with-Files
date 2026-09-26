@@ -4,55 +4,87 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Parsed once here, imported everywhere else that needs it —
-# single source of truth, matches the CONFIG pattern already used
-# in the frontend's config.js.
-ALLOWED_MIME_TYPES: list[str] = [
-    mime.strip()
-    for mime in os.getenv("ALLOWED_MIME_TYPES", "").split(",")
-    if mime.strip()
-]
+
+class MissingEnvVarError(RuntimeError):
+    """Raised when a required environment variable is missing or empty.
+    Fails fast at import time instead of letting the app start with a
+    silently wrong default that only surfaces later as a confusing bug
+    (e.g. ALLOWED_ORIGINS defaulting to localhost in production, or
+    EMBEDDING_PROVIDER silently loading the heavy local model)."""
+
+    def __init__(self, var_name: str):
+        super().__init__(
+            f"Required environment variable '{var_name}' is missing or empty. "
+            f"Set it in your .env file (see .env.sample)."
+        )
+
+
+def require_env(var_name: str) -> str:
+    """Use for anything that legitimately differs between dev/test/prod,
+    or is security-sensitive. No default — missing means the app refuses
+    to start, loudly, instead of guessing."""
+    value = os.getenv(var_name, "").strip()
+    if not value:
+        raise MissingEnvVarError(var_name)
+    return value
+
+
+def optional_env(var_name: str, default: str) -> str:
+    """Use for tuning knobs that hold the same sensible value across every
+    environment — safe to default if unset."""
+    return os.getenv(var_name, default)
+
+
+# ============================================================
+# REQUIRED — differ between dev/test/prod, or security-sensitive.
+# No default. Missing var = app refuses to start.
+# ============================================================
+
+DATABASE_URL: str = require_env("DATABASE_URL")
+
+JWT_SECRET_KEY: str = require_env("JWT_SECRET_KEY")
+
+SUPABASE_URL: str = require_env("SUPABASE_URL")
+SUPABASE_SERVICE_ROLE_KEY: str = require_env("SUPABASE_SERVICE_ROLE_KEY")
+SUPABASE_BUCKET_NAME: str = require_env("SUPABASE_BUCKET_NAME")
 
 ALLOWED_ORIGINS: list[str] = [
-    origin.strip()
-    for origin in os.getenv(
-        "ALLOWED_ORIGINS",
-        "http://127.0.0.1:5500,http://localhost:5500",
-    ).split(",")
-    if origin.strip()
+    origin.strip() for origin in require_env("ALLOWED_ORIGINS").split(",") if origin.strip()
 ]
 
-MAX_FILE_SIZE: int = int(os.getenv("MAX_FILE_SIZE_MB", '10485760')) # Default 10 MB
+ALLOWED_MIME_TYPES: list[str] = [
+    mime.strip() for mime in require_env("ALLOWED_MIME_TYPES").split(",") if mime.strip()
+]
 
-MAX_ACTIVE_DOCUMENTS: int = int(os.getenv("MAX_ACTIVE_DOCUMENTS", "3"))
+JINA_API_KEY: str = require_env("JINA_API_KEY")
 
-MAX_BIN_DOCUMENTS: int = int(os.getenv("MAX_BIN_DOCUMENTS", "5"))
+GROQ_API_KEY: str = require_env("GROQ_API_KEY")
+GROQ_MODEL_NAME: str = require_env("GROQ_MODEL_NAME")
 
-RECYCLE_BIN_RETENTION_DAYS: int = int(os.getenv("RECYCLE_BIN_RETENTION_DAYS", "7"))
 
-CHUNK_SIZE_TOKENS: int = int(os.getenv("CHUNK_SIZE_TOKENS", "400"))
-CHUNK_OVERLAP_TOKENS: int = int(os.getenv("CHUNK_OVERLAP_TOKENS", "50"))
+# ============================================================
+# OPTIONAL — same sensible value across every environment.
+# Safe to default if unset.
+# ============================================================
 
-CHAT_TOP_K: int = int(os.getenv("CHAT_TOP_K", "5"))
+# Fixed bug: this used to read "MAX_FILE_SIZE_MB", a name that doesn't
+# exist anywhere in .env.sample — .env could never override it.
+MAX_FILE_SIZE: int = int(optional_env("MAX_FILE_SIZE_BYTES", "10485760"))  # 10 MB
 
-# When False (v1 default): LLM answers ONLY from retrieved document chunks,
-# and says so explicitly when the answer isn't found in them.
-# When True (future): if retrieval doesn't have enough relevant context,
-# the LLM may fall back to its own general knowledge — but MUST prefix
-# that portion of the answer with a clear warning that it's not sourced
-# from the user's documents. Built into the prompt logic now so flipping
-# this later is a one-line env change, no code restructuring.
-HYBRID_MODE_ENABLED: bool = os.getenv("HYBRID_MODE_ENABLED", "false").lower() == "true"
+MAX_ACTIVE_DOCUMENTS: int = int(optional_env("MAX_ACTIVE_DOCUMENTS", "3"))
+MAX_BIN_DOCUMENTS: int = int(optional_env("MAX_BIN_DOCUMENTS", "5"))
+RECYCLE_BIN_RETENTION_DAYS: int = int(optional_env("RECYCLE_BIN_RETENTION_DAYS", "7"))
 
-GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
+CHUNK_SIZE_TOKENS: int = int(optional_env("CHUNK_SIZE_TOKENS", "400"))
+CHUNK_OVERLAP_TOKENS: int = int(optional_env("CHUNK_OVERLAP_TOKENS", "50"))
 
-GROQ_MODEL_NAME = os.getenv("GROQ_MODEL_NAME", "")
+CHAT_TOP_K: int = int(optional_env("CHAT_TOP_K", "5"))
 
-if not GROQ_MODEL_NAME:
-    raise ValueError("GROQ_MODEL_NAME not found. Check your .env file.")
+HYBRID_MODE_ENABLED: bool = optional_env("HYBRID_MODE_ENABLED", "false").lower() == "true"
 
-if not GROQ_API_KEY:
-    raise ValueError("GROQ_API_KEY not found. Check your .env file.")
+SQL_ECHO: bool = optional_env("SQL_ECHO", "false").lower() == "true"
 
-if not ALLOWED_MIME_TYPES:
-    raise ValueError("ALLOWED_MIME_TYPES not set or empty in .env")
+# Moved out of jwt_utils.py — token lifetime is exactly the kind of thing
+# you want short in a test environment, longer in prod.
+ACCESS_TOKEN_EXPIRE_MINUTES: int = int(optional_env("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+REFRESH_TOKEN_EXPIRE_DAYS: int = int(optional_env("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
