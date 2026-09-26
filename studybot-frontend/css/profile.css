@@ -55,10 +55,19 @@
 }
 
 .locked-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   font-size: 11px;
   color: var(--color-text-dim);
   font-weight: 400;
   margin-left: 4px;
+}
+
+.locked-note svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
 }
 
 .profile-card-actions {

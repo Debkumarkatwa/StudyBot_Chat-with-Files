@@ -8,7 +8,7 @@ from pgvector.sqlalchemy import Vector
 
 from app.database import Base
 
-# Must match the output dimension of BAAI/bge-small-en-v1.5
+# Must match the configured Jina embedding output dimension.
 EMBEDDING_DIM = 512
 
 
@@ -36,8 +36,7 @@ class Chunk(Base):
 
     __table_args__ = (
         # HNSW index for fast approximate nearest-neighbor search.
-        # vector_cosine_ops = cosine similarity, the standard choice for
-        # text embeddings (matches how bge/most embedding models are trained).
+        # vector_cosine_ops = cosine distance for the text embeddings.
         Index(
             "ix_chunks_embedding_hnsw",
             "embedding",

@@ -6,7 +6,7 @@ from app.config import SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_BUCKET_
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
 
-def build_storage_path(owner_id: uuid.UUID, filename: str) -> str:
+def build_storage_path(owner_id: uuid.UUID, filename: str | None) -> str:
     """
     Builds a unique, collision-safe storage path.
     Namespaced by owner_id so users' files never collide with each other,
@@ -14,7 +14,9 @@ def build_storage_path(owner_id: uuid.UUID, filename: str) -> str:
     a file with the same name never overwrites the original.
     """
     unique_prefix = uuid.uuid4().hex
-    safe_filename = os.path.basename(filename).replace(" ", "_")
+    safe_filename = os.path.basename(filename or "unnamed_file").strip().replace(" ", "_")
+    if not safe_filename:
+        safe_filename = "unnamed_file"
     return f"{owner_id}/{unique_prefix}_{safe_filename}"
 
 

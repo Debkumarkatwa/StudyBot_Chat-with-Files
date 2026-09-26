@@ -15,6 +15,9 @@
   </script>
 
   <title>Log In — StudyBot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/base.css" />
   <link rel="stylesheet" href="css/components.css" />
   <link rel="stylesheet" href="css/auth.css" />
@@ -26,7 +29,7 @@
       <a href="landing.html" class="logo">StudyBot</a>
     </div>
     <div class="topnav-right">
-      <button class="icon-btn" id="themeToggle" aria-label="Toggle light/dark theme" aria-pressed="false">🌙</button>
+      <button class="icon-btn tooltip-bottom" id="themeToggle" data-tooltip="Toggle theme" aria-label="Toggle light/dark theme" aria-pressed="false"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></button>
     </div>
   </header>
 
@@ -65,7 +68,7 @@
               required
               aria-describedby="loginPasswordError"
             />
-            <button type="button" class="password-toggle" id="toggleLoginPassword" aria-label="Show password">👁</button>
+            <button type="button" class="password-toggle" id="toggleLoginPassword" aria-label="Show password"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2 12s3.8-6.5 10-6.5S22 12 22 12s-3.8 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/></svg></button>
           </div>
           <span class="field-error" id="loginPasswordError"></span>
         </div>
@@ -80,6 +83,7 @@
   </div>
 
   <script src="js/config.js"></script>
+  <script src="js/icons.js"></script>
   <script src="js/theme.js"></script>
   <script src="js/api.js"></script>
   <script src="js/auth.js"></script>

@@ -14,6 +14,9 @@
   </script>
 
   <title>Documents — StudyBot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/base.css" />
   <link rel="stylesheet" href="css/components.css" />
   <link rel="stylesheet" href="css/documents.css" />
@@ -25,29 +28,29 @@
   <aside class="app-sidebar" id="appSidebar">
     <div class="app-sidebar-header">
       <a href="landing.html" class="logo logo-link" aria-label="Go to home page">StudyBot</a>
-      <button class="icon-btn" id="closeSidebar" aria-label="Close sidebar">✕</button>
+      <button class="icon-btn tooltip-bottom" id="closeSidebar" data-tooltip="Close sidebar" aria-label="Close sidebar"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>
     </div>
     <nav class="app-sidebar-nav">
-      <a href="chat.html" class="sidebar-link">💬 Chat</a>
-      <a href="documents.html" class="sidebar-link active">📄 Documents</a>
-      <a href="profile.html" class="sidebar-link">👤 Profile</a>
-      <a href="settings.html" class="sidebar-link">⚙️ Settings</a>
+      <a href="chat.html" class="sidebar-link"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 5.5h16a1 1 0 0 1 1 1V16a1 1 0 0 1-1 1H9l-4 3.5V17H4a1 1 0 0 1-1-1V6.5a1 1 0 0 1 1-1z"/></svg> Chat</a>
+      <a href="documents.html" class="sidebar-link active"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/></svg> Documents</a>
+      <a href="profile.html" class="sidebar-link"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.6 3.1-6.2 7-6.2s7 2.6 7 6.2"/></svg> Profile</a>
+      <a href="settings.html" class="sidebar-link"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="1.6" fill="currentColor" stroke="none"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="1.6" fill="currentColor" stroke="none"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="11" cy="18" r="1.6" fill="currentColor" stroke="none"/></svg> Settings</a>
     </nav>
     <div class="app-sidebar-footer">
-      <button class="sidebar-link logout-link" id="sidebarLogoutBtn">🚪 Logout</button>
+      <button class="sidebar-link logout-link" id="sidebarLogoutBtn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 4H6a1.5 1.5 0 0 0-1.5 1.5v13A1.5 1.5 0 0 0 6 20h3"/><path d="M14 16l4-4-4-4"/><line x1="18" y1="12" x2="9" y2="12"/></svg> Logout</button>
     </div>
   </aside>
 
   <!-- ============ TOP NAVBAR ============ -->
   <header class="topnav">
     <div class="topnav-left">
-      <button class="icon-btn" id="openSidebar" aria-label="Open sidebar">☰</button>
+      <button class="icon-btn tooltip-bottom" id="openSidebar" data-tooltip="Open sidebar" aria-label="Open sidebar"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg></button>
       <a href="landing.html" class="logo logo-link" aria-label="Go to home page">StudyBot</a>
     </div>
     <div class="topnav-right">
-      <button class="icon-btn" id="themeToggle" aria-label="Toggle light/dark theme" aria-pressed="false">🌙</button>
+      <button class="icon-btn tooltip-bottom" id="themeToggle" data-tooltip="Toggle theme" aria-label="Toggle light/dark theme" aria-pressed="false"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></button>
       <div class="profile-menu-wrapper">
-        <button class="profile-icon-btn" id="profileIconBtn" aria-label="Open profile menu">👤</button>
+        <button class="profile-icon-btn tooltip-bottom" id="profileIconBtn" data-tooltip="Profile menu" aria-label="Open profile menu"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.6 3.1-6.2 7-6.2s7 2.6 7 6.2"/></svg></button>
         <div class="profile-dropdown hidden" id="profileDropdown">
           <a href="profile.html">View Profile</a>
           <button id="logoutBtn">Logout</button>
@@ -69,18 +72,18 @@
     <!-- ============ UPLOAD ZONE ============ -->
         <div class="upload-zone" id="uploadZone">
       <input type="file" id="fileInput" accept=".pdf,.docx,.pptx,.txt" hidden />
-      <span class="upload-icon" aria-hidden="true">📁</span>
+      <span class="upload-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3.5 6.5a1 1 0 0 1 1-1H10l2 2h7.5a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1z"/></svg></span>
       <div id="uploadZoneDefault">
         <p>Drag files here or <span class="link" id="browseLink">browse</span></p>
         <p class="hint">PDF, DOCX, PPTX, TXT</p>
       </div>
-      <p class="upload-status hidden" id="uploadZoneStatus">⏳ Uploading &amp; processing your document...</p>
+      <p class="upload-status hidden" id="uploadZoneStatus"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.2 2"/></svg> Uploading &amp; processing your document...</p>
     </div>
 
     <!-- ============ MY DOCUMENTS SECTION ============ -->
     <section class="doc-section">
       <h2 class="doc-section-title">
-        📄 My Documents
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/></svg> My Documents
         <span class="section-badge" id="docCountBadge">0/3</span>
       </h2>
       <p class="empty-file-list hidden" id="emptyFileList">No documents uploaded yet — add one above to get started.</p>
@@ -90,7 +93,7 @@
     <!-- ============ RECYCLE BIN SECTION ============ -->
     <section class="doc-section">
       <h2 class="doc-section-title">
-        🗑️ Recycle Bin
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4.5 7h15"/><path d="M9 7V4.8a.8.8 0 0 1 .8-.8h4.4a.8.8 0 0 1 .8.8V7"/><path d="M6.5 7l1 13.2h9L17.5 7"/></svg> Recycle Bin
         <span class="section-badge" id="binCountBadge">0/5</span>
         <span class="bin-header-actions">
           <button type="button" class="btn-ghost btn-sm btn-delete-all" id="clearBinBtn">Delete all</button>
@@ -131,11 +134,13 @@
   </div>
 
   <!-- ============ FLOATING CHAT BUTTON ============ -->
-  <a href="chat.html" class="fab-chat-btn" aria-label="Go to chat">💬</a>
+  <a href="chat.html" class="fab-chat-btn" aria-label="Go to chat"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 5.5h16a1 1 0 0 1 1 1V16a1 1 0 0 1-1 1H9l-4 3.5V17H4a1 1 0 0 1-1-1V6.5a1 1 0 0 1 1-1z"/></svg></a>
 
   <script src="js/config.js"></script>
+  <script src="js/icons.js"></script>
   <script src="js/theme.js"></script>
   <script src="js/api.js"></script>
+  <script src="js/modal-focus.js"></script>
   <script src="js/documents.js"></script>
 </body>
 </html>

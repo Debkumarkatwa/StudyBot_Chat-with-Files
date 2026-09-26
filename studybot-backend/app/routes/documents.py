@@ -3,13 +3,14 @@ import logging
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, BackgroundTasks, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.user import User
 from app.models.document import Document, DocumentStatus
+from app.models.chunk import Chunk
 from app.schemas.document import DocumentResponse
 from app.dependencies import get_current_user
 from app.storage import build_storage_path, upload_file, delete_file
@@ -23,7 +24,6 @@ router = APIRouter(prefix="/documents", tags=["documents"])
 
 @router.post("/upload", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
 async def upload_document(
-    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -84,7 +84,20 @@ async def upload_document(
         status=DocumentStatus.processing,
     )
     db.add(new_document)
-    await db.commit()
+    try:
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        try:
+            await asyncio.to_thread(delete_file, storage_path)
+        except Exception:
+            logger.exception(
+                f"Could not clean up storage file after document commit failure: {storage_path}"
+            )
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Could not save document metadata. Please try uploading again.",
+        )
     await db.refresh(new_document)
 
     # --- 6. Run the parse -> chunk -> embed pipeline synchronously ---
@@ -149,6 +162,25 @@ async def upload_document(
     # already has "active" or "failed".
     await db.refresh(new_document)
 
+    if new_document.status == DocumentStatus.failed:
+        try:
+            await asyncio.to_thread(delete_file, storage_path)
+        except Exception:
+            logger.exception(
+                f"Could not clean up storage file for failed document {new_document.id}"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Document processing failed. Please try uploading again.",
+            )
+
+        await db.delete(new_document)
+        await db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Document processing failed. Please try uploading again.",
+        )
+
     return new_document
 
 
@@ -171,11 +203,12 @@ async def _purge_expired_bin_items(db: AsyncSession, owner_id: uuid.UUID) -> Non
 
     for doc in expired:
         try:
-            delete_file(doc.storage_path)
+            await asyncio.to_thread(delete_file, doc.storage_path)
         except Exception:
-            # Don't let a storage hiccup block the DB purge — an orphaned
-            # storage file is cheap; a bin stuck past its retention isn't.
-            pass
+            logger.exception(
+                f"Could not purge storage file for expired document {doc.id}; keeping record for retry"
+            )
+            continue
         await db.delete(doc)
 
     if expired:
@@ -250,14 +283,28 @@ async def clear_bin(
     result = await db.execute(
         select(Document).where(Document.owner_id == current_user.id, Document.status == DocumentStatus.deleted)
     )
+    failed_documents = []
     for document in result.scalars().all():
         try:
             await asyncio.to_thread(delete_file, document.storage_path)
         except Exception:
-            pass  # bulk clear shouldn't halt on one bad file
+            logger.exception(
+                f"Could not delete recycle-bin file {document.id}; keeping record for retry"
+            )
+            failed_documents.append(document.id)
+            continue
         await db.delete(document)
 
     await db.commit()
+
+    if failed_documents:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=(
+                f"Could not permanently delete {len(failed_documents)} recycle-bin file(s). "
+                "They remain available for retry."
+            ),
+        )
 
 
 @router.delete("/{document_id}", response_model=DocumentResponse)
@@ -299,7 +346,13 @@ async def soft_delete_document(
             try:
                 await asyncio.to_thread(delete_file, oldest.storage_path)
             except Exception:
-                pass
+                logger.exception(
+                    f"Could not evict oldest recycle-bin file {oldest.id}; refusing to lose its record"
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_502_BAD_GATEWAY,
+                    detail="Could not free recycle-bin space. Please try again later.",
+                )
             await db.delete(oldest)
 
     document.status = DocumentStatus.deleted
@@ -340,7 +393,14 @@ async def restore_document(
             detail=f"Your active documents are full ({MAX_ACTIVE_DOCUMENTS} max). Remove one before restoring.",
         )
 
-    document.status = DocumentStatus.active
+    chunk_count_result = await db.execute(
+        select(func.count(Chunk.id)).where(Chunk.document_id == document.id)
+    )
+    document.status = (
+        DocumentStatus.active
+        if chunk_count_result.scalar_one() > 0
+        else DocumentStatus.failed
+    )
     document.deleted_at = None
     await db.commit()
     await db.refresh(document)

@@ -1,6 +1,6 @@
 // auth.js
-// Real client-side validation. The actual signup/login action is mocked via API.*
-// until the Python backend exists — see api.js.
+// Real client-side validation. Signup and login are sent to the Python backend
+// through API.*; this file only owns the form behavior and validation.
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -38,7 +38,7 @@ function wirePasswordToggle(toggleBtnId, inputId) {
   btn.addEventListener("click", () => {
     const isHidden = input.type === "password";
     input.type = isHidden ? "text" : "password";
-    btn.textContent = isHidden ? "🙈" : "👁";
+    setIcon(btn, isHidden ? "eyeOff" : "eye");
     btn.setAttribute("aria-label", isHidden ? "Hide password" : "Show password");
   });
 }

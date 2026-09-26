@@ -16,6 +16,7 @@ fastapi==0.141.1
 filelock==3.32.2
 fsspec==2026.7.0
 greenlet==3.5.4
+groq==1.7.0
 h11==0.16.0
 h2==4.4.1
 hf-xet==1.5.2
@@ -56,6 +57,7 @@ python-pptx==1.0.2
 PyYAML==6.0.3
 realtime==2.31.0
 regex==2026.7.19
+requests==2.34.2
 rich==15.0.0
 safetensors==0.8.0
 setuptools==83.0.0

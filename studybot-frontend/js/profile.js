@@ -62,7 +62,7 @@ function wirePasswordToggle(toggleBtnId, inputId) {
   btn.addEventListener("click", () => {
     const isHidden = input.type === "password";
     input.type = isHidden ? "text" : "password";
-    btn.textContent = isHidden ? "🙈" : "👁";
+    setIcon(btn, isHidden ? "eyeOff" : "eye");
     btn.setAttribute("aria-label", isHidden ? "Hide password" : "Show password");
   });
 }
@@ -294,15 +294,26 @@ deleteAccountBtn.addEventListener("click", () => {
   deleteConfirmPasswordInput.value = "";
   setFieldError(deleteConfirmPasswordInput, deleteConfirmPasswordError, "");
   confirmDeleteBtn.disabled = true;
-  deleteConfirmPasswordInput.focus();
+  trapModalFocus(deleteModalOverlay, deleteConfirmPasswordInput);
 });
 
 cancelDeleteBtn.addEventListener("click", () => {
   deleteModalOverlay.classList.add("hidden");
+  releaseModalFocus(deleteModalOverlay);
 });
 
 deleteModalOverlay.addEventListener("click", (e) => {
-  if (e.target === deleteModalOverlay) deleteModalOverlay.classList.add("hidden");
+  if (e.target === deleteModalOverlay) {
+    deleteModalOverlay.classList.add("hidden");
+    releaseModalFocus(deleteModalOverlay);
+  }
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !deleteModalOverlay.classList.contains("hidden")) {
+    deleteModalOverlay.classList.add("hidden");
+    releaseModalFocus(deleteModalOverlay);
+  }
 });
 
 function updateDeleteButtonState() {

@@ -14,9 +14,9 @@ function applyTheme(theme) {
 }
 
 function updateToggleIcons(theme) {
-  const icon = theme === "light" ? "☀️" : "🌙";
+  const iconName = theme === "light" ? "sun" : "moon";
   document.querySelectorAll("[data-theme-toggle]").forEach((btn) => {
-    btn.textContent = icon;
+    setIcon(btn, iconName);
     btn.setAttribute("aria-pressed", theme === "light" ? "true" : "false");
   });
 }

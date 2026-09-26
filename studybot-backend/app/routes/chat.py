@@ -27,10 +27,11 @@ async def ask_question(
 
     chunks_with_sources = [(chunk.content, filename) for chunk, filename in results]
     answer = await generate_answer(payload.question, chunks_with_sources, effective_hybrid)
+    hybrid_used = effective_hybrid and "⚠️ This part is not from your uploaded documents:" in answer
 
     sources = [
         SourceInfo(filename=filename, chunk_preview=chunk.content[:150])
         for chunk, filename in results
     ]
 
-    return ChatResponse(answer=answer, sources=sources, hybrid_used=effective_hybrid)
+    return ChatResponse(answer=answer, sources=sources, hybrid_used=hybrid_used)

@@ -1,21 +1,49 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy import select
+from sqlalchemy import select, update
 import asyncio
+from datetime import datetime, timezone
 
 from app.database import get_db
 from app.models.user import User
 from app.models.document import Document
-from app.schemas.user import UserSignup, UserLogin, UserResponse, TokenResponse, RefreshRequest, UpdateNameRequest, ChangePasswordRequest, DeleteAccountRequest
+from app.models.refresh_token import RefreshToken
+from app.schemas.user import UserSignup, UserLogin, UserResponse, TokenResponse, RefreshRequest, UpdateNameRequest, ChangePasswordRequest, DeleteAccountRequest, LogoutRequest
 from app.security import hash_password, verify_password
 from app.storage import delete_file
 from app.jwt_utils import create_access_token, create_refresh_token, decode_token
+from app.config import AUTH_COOKIE_SECURE, AUTH_COOKIE_SAMESITE, REFRESH_TOKEN_EXPIRE_DAYS
 import jwt as pyjwt
 
 from app.dependencies import get_current_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+def _refresh_token_record(token: str, user_id: str) -> RefreshToken:
+    decoded = decode_token(token)
+    return RefreshToken(
+        jti=decoded["jti"],
+        user_id=user_id,
+        expires_at=datetime.fromtimestamp(decoded["exp"], tz=timezone.utc),
+    )
+
+
+def _set_auth_cookies(response: Response, access_token: str, refresh_token: str) -> None:
+    cookie_options = {
+        "httponly": True,
+        "secure": AUTH_COOKIE_SECURE,
+        "samesite": AUTH_COOKIE_SAMESITE,
+        "path": "/",
+    }
+    response.set_cookie("studybot_access_token", access_token, max_age=1800, **cookie_options)
+    response.set_cookie(
+        "studybot_refresh_token",
+        refresh_token,
+        max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
+        **cookie_options,
+    )
 
 
 @router.post("/signup", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
@@ -43,7 +71,11 @@ async def signup(payload: UserSignup, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(payload: UserLogin, db: AsyncSession = Depends(get_db)):
+async def login(
+    payload: UserLogin,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+):
     result = await db.execute(select(User).where(User.email == payload.email))
     user = result.scalar_one_or_none()
 
@@ -63,14 +95,26 @@ async def login(payload: UserLogin, db: AsyncSession = Depends(get_db)):
 
     access_token = create_access_token(str(user.id))
     refresh_token = create_refresh_token(str(user.id))
+    db.add(_refresh_token_record(refresh_token, str(user.id)))
+    await db.commit()
+    _set_auth_cookies(response, access_token, refresh_token)
 
     return TokenResponse(access_token=access_token, refresh_token=refresh_token)
 
 
 @router.post("/refresh", response_model=TokenResponse)
-async def refresh(payload: RefreshRequest):
+async def refresh(
+    payload: RefreshRequest,
+    response: Response,
+    refresh_cookie: str | None = Cookie(default=None, alias="studybot_refresh_token"),
+    db: AsyncSession = Depends(get_db),
+):
+    refresh_token = payload.refresh_token or refresh_cookie
+    if not refresh_token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token is required.")
+
     try:
-        decoded = decode_token(payload.refresh_token)
+        decoded = decode_token(refresh_token)
     except pyjwt.ExpiredSignatureError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token expired. Please log in again.")
     except pyjwt.InvalidTokenError:
@@ -82,10 +126,59 @@ async def refresh(payload: RefreshRequest):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type.")
 
     user_id = decoded["sub"]
+    jti = decoded.get("jti")
+    if not jti:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token.")
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    if result.scalar_one_or_none() is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token.")
+
+    token_result = await db.execute(
+        select(RefreshToken).where(
+            RefreshToken.jti == jti,
+            RefreshToken.user_id == user_id,
+            RefreshToken.revoked_at.is_(None),
+            RefreshToken.expires_at > datetime.now(timezone.utc),
+        )
+    )
+    stored_token = token_result.scalar_one_or_none()
+    if stored_token is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token has already been used.")
+
     new_access_token = create_access_token(user_id)
     new_refresh_token = create_refresh_token(user_id)
+    stored_token.revoked_at = datetime.now(timezone.utc)
+    db.add(_refresh_token_record(new_refresh_token, user_id))
+    await db.commit()
+    _set_auth_cookies(response, new_access_token, new_refresh_token)
 
     return TokenResponse(access_token=new_access_token, refresh_token=new_refresh_token)
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+async def logout(
+    payload: LogoutRequest,
+    response: Response,
+    refresh_cookie: str | None = Cookie(default=None, alias="studybot_refresh_token"),
+    db: AsyncSession = Depends(get_db),
+):
+    refresh_token = payload.refresh_token or refresh_cookie
+    if refresh_token:
+        try:
+            decoded = decode_token(refresh_token)
+            jti = decoded.get("jti")
+            if jti:
+                result = await db.execute(select(RefreshToken).where(RefreshToken.jti == jti))
+                stored_token = result.scalar_one_or_none()
+                if stored_token is not None and stored_token.revoked_at is None:
+                    stored_token.revoked_at = datetime.now(timezone.utc)
+                    await db.commit()
+        except pyjwt.InvalidTokenError:
+            pass
+
+    response.delete_cookie("studybot_access_token", path="/")
+    response.delete_cookie("studybot_refresh_token", path="/")
 
 
 @router.get("/me", response_model=UserResponse)
@@ -118,6 +211,14 @@ async def change_password(
         )
 
     current_user.hashed_password = hash_password(payload.new_password)
+    await db.execute(
+        update(RefreshToken)
+        .where(
+            RefreshToken.user_id == current_user.id,
+            RefreshToken.revoked_at.is_(None),
+        )
+        .values(revoked_at=datetime.now(timezone.utc))
+    )
     await db.commit()
 
 
@@ -143,9 +244,10 @@ async def delete_account(
         try:
             await asyncio.to_thread(delete_file, document.storage_path)
         except Exception:
-            # Don't let one bad storage delete block account deletion —
-            # an orphaned file is recoverable manually, a stuck delete isn't.
-            pass
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Could not remove all stored documents. Account deletion was not completed.",
+            )
 
     await db.delete(current_user)  # documents + chunks cascade automatically
     await db.commit()

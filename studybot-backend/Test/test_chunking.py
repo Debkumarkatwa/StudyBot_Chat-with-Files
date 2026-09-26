@@ -4,14 +4,16 @@ Run from the `backend/` folder: python Test/test_chunking.py "path/to/file.pdf"
 """
 
 import mimetypes
+import sys
 
 from app.parsing import extract_text
 from app.chunking import chunk_text, count_tokens
+from app.config import CHUNK_SIZE_TOKENS
 
 def main():
     print("Usage: Chunking Pipeline Testing Started...............")
 
-    file_path = input('Enter the File Path -->  ')
+    file_path = sys.argv[1] if len(sys.argv) > 1 else input('Enter the File Path -->  ')
 
     with open(file_path, "rb") as f:
         file_bytes = f.read()
@@ -27,11 +29,12 @@ def main():
         print(f"\n--- Chunk {i} ({count_tokens(c)} tokens) ---")
         print(c[:200])
 
-    over_limit = [i for i, c in enumerate(chunks) if count_tokens(c) > 512]
+    over_limit = [i for i, c in enumerate(chunks) if count_tokens(c) > CHUNK_SIZE_TOKENS]
     if chunks and not over_limit:
-        print(f"\n✅ PASSED: {len(chunks)} chunks created, all under the model's 512-token limit.")
+        print(f"\n✅ PASSED: {len(chunks)} chunks created, all within the configured {CHUNK_SIZE_TOKENS}-token limit.")
     else:
-        print(f"\n❌ FAILED: Chunks {over_limit} exceed the 512-token limit." if over_limit else "\n❌ FAILED: No chunks produced.")
+        print(f"\n❌ FAILED: Chunks {over_limit} exceed the configured {CHUNK_SIZE_TOKENS}-token limit." if over_limit else "\n❌ FAILED: No chunks produced.")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

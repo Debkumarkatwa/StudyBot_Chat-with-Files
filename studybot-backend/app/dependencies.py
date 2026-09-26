@@ -1,7 +1,7 @@
 import uuid
 
 import jwt as pyjwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Cookie, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,20 +12,23 @@ from app.jwt_utils import decode_token
 
 # HTTPBearer reads the "Authorization: Bearer <token>" header automatically
 # and shows a nice "Authorize" button in Swagger UI (/docs) for testing.
-bearer_scheme = HTTPBearer()
+bearer_scheme = HTTPBearer(auto_error=False)
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+    access_token: str | None = Cookie(default=None, alias="studybot_access_token"),
     db: AsyncSession = Depends(get_db),
 ) -> User:
-    token = credentials.credentials
-
     credentials_error = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials.",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+    token = credentials.credentials if credentials else access_token
+    if not token:
+        raise credentials_error
 
     try:
         payload = decode_token(token)

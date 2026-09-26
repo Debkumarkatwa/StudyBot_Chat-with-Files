@@ -96,10 +96,18 @@
 }
 
 .source-tag {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   margin-top: 8px;
   font-size: 12px;
   color: var(--color-text-dim);
+}
+
+.source-tag svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
 }
 
 .features {
@@ -123,8 +131,14 @@
 
 .feature-icon {
   font-size: 28px;
-  display: block;
+  display: flex;
+  justify-content: center;
   margin-bottom: 10px;
+}
+
+.feature-icon svg {
+  width: 28px;
+  height: 28px;
 }
 
 .feature-card h3 {

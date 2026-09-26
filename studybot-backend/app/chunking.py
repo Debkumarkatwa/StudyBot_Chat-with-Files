@@ -5,8 +5,8 @@ from transformers import AutoTokenizer
 from app.config import CHUNK_SIZE_TOKENS, CHUNK_OVERLAP_TOKENS
 
 # Loaded once at import time — reused for every chunking call.
-# Same tokenizer the actual embedding model uses, so token counts here
-# are exact, not estimated.
+# This tokenizer is used only for chunk-sizing estimates. The embedding
+# provider is Jina, so these counts are not guaranteed to match its tokenizer.
 _tokenizer = AutoTokenizer.from_pretrained("BAAI/bge-small-en-v1.5")
 
 # We only ever use this tokenizer to COUNT tokens (for chunk sizing decisions),
@@ -34,6 +34,15 @@ def _split_into_sentences(text: str) -> list[str]:
     return [s.strip() for s in sentences if s.strip()]
 
 
+def _split_by_token_limit(text: str, max_tokens: int) -> list[str]:
+    token_ids = _tokenizer.encode(text, add_special_tokens=False)
+    return [
+        decoded.strip()
+        for start in range(0, len(token_ids), max_tokens)
+        if (decoded := _tokenizer.decode(token_ids[start:start + max_tokens], skip_special_tokens=True).strip())
+    ]
+
+
 def chunk_text(text: str) -> list[str]:
     """
     Recursively splits text into chunks targeting CHUNK_SIZE_TOKENS,
@@ -52,7 +61,11 @@ def chunk_text(text: str) -> list[str]:
         if count_tokens(para) <= CHUNK_SIZE_TOKENS:
             units.append(para)
         else:
-            units.extend(_split_into_sentences(para))
+            for sentence in _split_into_sentences(para):
+                if count_tokens(sentence) <= CHUNK_SIZE_TOKENS:
+                    units.append(sentence)
+                else:
+                    units.extend(_split_by_token_limit(sentence, CHUNK_SIZE_TOKENS))
 
     chunks: list[str] = []
     current_chunk_units: list[str] = []

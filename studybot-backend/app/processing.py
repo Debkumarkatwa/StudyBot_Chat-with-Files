@@ -37,6 +37,10 @@ async def process_document_pipeline(document_id: uuid.UUID, file_bytes: bytes, m
                 raise ValueError("Document produced zero chunks after splitting.")
 
             embeddings = await asyncio.to_thread(generate_embeddings, chunks)
+            if len(embeddings) != len(chunks):
+                raise ValueError(
+                    f"Embedding count mismatch: expected {len(chunks)}, got {len(embeddings)}."
+                )
 
             # 4. Save Chunk rows
             chunk_rows = [

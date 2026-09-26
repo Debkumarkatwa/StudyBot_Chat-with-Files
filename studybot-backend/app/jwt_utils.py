@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+import uuid
 import jwt
 from app.config import JWT_SECRET_KEY, ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS
 
@@ -19,6 +20,7 @@ def create_refresh_token(user_id: str) -> str:
     payload = {
         "sub": user_id,
         "type": "refresh",
+        "jti": str(uuid.uuid4()),
         "exp": expire,
     }
     return jwt.encode(payload, JWT_SECRET_KEY, algorithm=ALGORITHM)

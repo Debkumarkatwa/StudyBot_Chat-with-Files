@@ -156,6 +156,11 @@ function setHasDocuments(hasDocuments) {
 async function loadDocuments() {
   try {
     const res = await API.getDocuments();
+    if (Array.isArray(selectedDocIds)) {
+      const availableIds = new Set(res.documents.map((doc) => doc.id));
+      selectedDocIds = selectedDocIds.filter((id) => availableIds.has(id));
+      if (selectedDocIds.length === 0) selectedDocIds = "all";
+    }
     setHasDocuments(res.documents.length > 0);
   } catch (err) {
     console.error("Failed to load documents:", err);
@@ -188,6 +193,18 @@ chatInput.addEventListener("input", () => {
   chatInput.style.height = chatInput.scrollHeight + "px";
 });
 
+// Puts a previous message's text back into the composer, resized and
+// focused with the caret at the end — used by each user message's
+// Edit button, for both exact resend and modify-then-resend.
+function loadTextIntoComposer(text) {
+  chatInput.value = text;
+  chatInput.style.height = "auto";
+  chatInput.style.height = chatInput.scrollHeight + "px";
+  chatInput.focus();
+  const end = chatInput.value.length;
+  chatInput.setSelectionRange(end, end);
+}
+
 // Enter = send, Shift+Enter = new line
 chatInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) {
@@ -216,8 +233,11 @@ function renderMessage(text, sender, sourceTag, sources = []) {
   const contentEl = document.createElement("div");
   contentEl.className = "message-content";
   if (sender === "bot") {
-    console.log("RAW:", JSON.stringify(text));
-    contentEl.innerHTML = DOMPurify.sanitize(marked.parse(text));
+    if (typeof marked !== "undefined" && typeof DOMPurify !== "undefined") {
+      contentEl.innerHTML = DOMPurify.sanitize(marked.parse(text));
+    } else {
+      contentEl.textContent = text;
+    }
   } else {
     contentEl.textContent = text;
   }
@@ -226,7 +246,7 @@ function renderMessage(text, sender, sourceTag, sources = []) {
   if (sourceTag) {
     const tag = document.createElement("span");
     tag.className = "source-tag";
-    tag.textContent = sourceTag === "document" ? "📄 From your documents" : "🌐 General AI knowledge";
+    setIcon(tag, sourceTag === "document" ? "document" : "globe", sourceTag === "document" ? "From your documents" : "General AI knowledge");
     el.appendChild(tag);
   }
 
@@ -241,7 +261,7 @@ function renderMessage(text, sender, sourceTag, sources = []) {
 
       const title = document.createElement("div");
       title.className = "sources-panel-filename";
-      title.textContent = `📄 ${filename} (${chunks.length} chunk${chunks.length > 1 ? "s" : ""})`;
+      setIcon(title, "document", `${filename} (${chunks.length} chunk${chunks.length > 1 ? "s" : ""})`);
       group.appendChild(title);
 
       chunks.forEach(({ num, preview }) => {
@@ -258,8 +278,6 @@ function renderMessage(text, sender, sourceTag, sources = []) {
   }
 
   if (sender === "bot") {
-    // Remove regenerate button from the previous last bot message —
-    // only the most recent bot reply should offer it.
     if (lastBotMessageEl) {
       const oldActions = lastBotMessageEl.querySelector(".message-actions");
       const regenBtn = oldActions?.querySelector(".regen-btn");
@@ -270,23 +288,27 @@ function renderMessage(text, sender, sourceTag, sources = []) {
     actions.className = "message-actions";
 
     const copyBtn = document.createElement("button");
-    copyBtn.textContent = "📋 Copy";
-    copyBtn.addEventListener("click", () => {
-      navigator.clipboard.writeText(text);
-      copyBtn.textContent = "✓ Copied";
-      setTimeout(() => (copyBtn.textContent = "📋 Copy"), 1500);
+    setIcon(copyBtn, "copy", "Copy");
+    copyBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(text);
+        setIcon(copyBtn, "check", "Copied");
+      } catch {
+        setIcon(copyBtn, "warning", "Copy failed");
+      }
+      setTimeout(() => setIcon(copyBtn, "copy", "Copy"), 1500);
     });
     actions.appendChild(copyBtn);
 
     const regenBtn = document.createElement("button");
     regenBtn.className = "regen-btn";
-    regenBtn.textContent = "🔄 Regenerate";
+    setIcon(regenBtn, "refresh", "Regenerate");
     regenBtn.addEventListener("click", () => regenerateLastResponse());
     actions.appendChild(regenBtn);
 
     if (sources.length > 0) {
       const sourcesBtn = document.createElement("button");
-      sourcesBtn.textContent = "🔗 Sources";
+      setIcon(sourcesBtn, "link", "Sources");
       sourcesBtn.addEventListener("click", () => {
         el.querySelector(".sources-panel")?.classList.toggle("hidden");
       });
@@ -295,9 +317,45 @@ function renderMessage(text, sender, sourceTag, sources = []) {
 
     el.appendChild(actions);
     lastBotMessageEl = el;
+
+    chatMessages.appendChild(el);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    return el;
   }
 
+  // User messages: bubble is appended completely unchanged from the
+  // original design. A small icon-only row (Edit, Copy) is appended as
+  // a SEPARATE sibling right below it — not inside the bubble, not
+  // beside it — matching the reference layout (icons under the message,
+  // right-aligned to it).
   chatMessages.appendChild(el);
+
+  const userActions = document.createElement("div");
+  userActions.className = "message-actions user-message-actions";
+
+  const editBtn = document.createElement("button");
+  editBtn.innerHTML = ICONS.edit;
+  editBtn.setAttribute("aria-label", "Edit and resend this message");
+  editBtn.title = "Edit";
+  editBtn.addEventListener("click", () => loadTextIntoComposer(text));
+  userActions.appendChild(editBtn);
+
+  const copyBtn = document.createElement("button");
+  copyBtn.innerHTML = ICONS.copy;
+  copyBtn.setAttribute("aria-label", "Copy this message");
+  copyBtn.title = "Copy";
+  copyBtn.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      copyBtn.innerHTML = ICONS.check;
+    } catch {
+      copyBtn.innerHTML = ICONS.warning;
+    }
+    setTimeout(() => (copyBtn.innerHTML = ICONS.copy), 1500);
+  });
+  userActions.appendChild(copyBtn);
+
+  chatMessages.appendChild(userActions);
   chatMessages.scrollTop = chatMessages.scrollHeight;
   return el;
 }
@@ -328,7 +386,7 @@ async function sendChatMessage(text) {
     renderMessage(res.answer, "bot", res.source, res.sources);
   } catch (err) {
     removeLoading(loadingId);
-    renderMessage("Something went wrong. Please try again.", "bot");
+    renderMessage(err.message || "Something went wrong. Please try again.", "bot");
     console.error(err);
   }
 }

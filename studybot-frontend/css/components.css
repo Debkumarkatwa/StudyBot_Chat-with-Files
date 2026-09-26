@@ -17,6 +17,7 @@
 }
 
 .icon-btn {
+  position: relative;
   background: none;
   border: none;
   color: var(--color-text);
@@ -24,6 +25,62 @@
   cursor: pointer;
   padding: 4px 8px;
   border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Icons drawn via icons.js inherit sizing from the button's font-size, so
+   swapping an icon never requires a separate width/height rule per button. */
+.icon-btn svg,
+.profile-icon-btn svg,
+.icon-action-btn svg {
+  width: 1.15em;
+  height: 1.15em;
+  display: block;
+}
+
+/* ===== Reusable hover/focus tooltip (place above or below the trigger) =====
+   Add data-tooltip="label" plus one of these two classes to any element that
+   already has position: relative (icon-btn, profile-icon-btn, icon-action-btn
+   all do). Use .tooltip-top for controls near the bottom of the viewport
+   (nothing below them to show a tooltip under) and .tooltip-bottom for
+   controls near the top (the topnav). */
+.tooltip-top[data-tooltip]::after,
+.tooltip-bottom[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-size: 11px;
+  padding: 5px 9px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  box-shadow: var(--shadow-card);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.12s ease;
+  pointer-events: none;
+  z-index: 70;
+}
+
+.tooltip-top[data-tooltip]::after {
+  bottom: calc(100% + 8px);
+}
+
+.tooltip-bottom[data-tooltip]::after {
+  top: calc(100% + 8px);
+}
+
+.tooltip-top[data-tooltip]:hover::after,
+.tooltip-top[data-tooltip]:focus-visible::after,
+.tooltip-bottom[data-tooltip]:hover::after,
+.tooltip-bottom[data-tooltip]:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
 }
 
 .icon-btn:hover {
@@ -111,6 +168,7 @@
 }
 
 .profile-icon-btn {
+  position: relative;
   background: var(--color-surface-alt);
   border: 1px solid var(--color-border);
   color: var(--color-text);
@@ -119,6 +177,9 @@
   height: 38px;
   border-radius: 50%;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .profile-dropdown {
@@ -203,8 +264,16 @@
   text-align: left;
   cursor: pointer;
   font-family: inherit;
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   width: 100%;
+}
+
+.sidebar-link svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }
 
 .sidebar-link:hover {
@@ -254,4 +323,9 @@
 
 .fab-chat-btn:hover {
   background: var(--color-primary-hover);
+}
+
+.fab-chat-btn svg {
+  width: 26px;
+  height: 26px;
 }

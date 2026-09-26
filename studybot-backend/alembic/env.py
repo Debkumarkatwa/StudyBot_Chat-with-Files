@@ -18,6 +18,7 @@ from app.database import Base  # noqa: E402
 from app.models.user import User
 from app.models.document import Document
 from app.models.chunk import Chunk
+from app.models.refresh_token import RefreshToken
 
 load_dotenv()
 

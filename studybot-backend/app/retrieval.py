@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.chunk import Chunk
 from app.models.document import Document, DocumentStatus
 from app.embeddings_jina import embed_query
-from app.config import CHAT_TOP_K
+from app.config import CHAT_MAX_COSINE_DISTANCE, CHAT_TOP_K
 
 
 async def retrieve_relevant_chunks(
@@ -30,14 +30,17 @@ async def retrieve_relevant_chunks(
         Document.owner_id == user_id,
         Document.status == DocumentStatus.active,
     ]
+
+    distance = Chunk.embedding.cosine_distance(query_embedding)
+
     if document_ids:
         filters.append(Document.id.in_(document_ids))
 
     result = await db.execute(
         select(Chunk, Document.filename)
         .join(Document, Chunk.document_id == Document.id)
-        .where(*filters)
-        .order_by(Chunk.embedding.cosine_distance(query_embedding))
+        .where(*filters, distance <= CHAT_MAX_COSINE_DISTANCE)
+        .order_by(distance)
         .limit(CHAT_TOP_K)
     )
 

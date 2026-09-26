@@ -1,12 +1,12 @@
 import uuid
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ChatRequest(BaseModel):
-    question: str
+    question: str = Field(min_length=1, max_length=10000)
     hybrid: bool | None = None  # None = fall back to HYBRID_MODE_ENABLED env default
-    document_ids: list[uuid.UUID] | None = None  # None = search all active documents
+    document_ids: list[uuid.UUID] | None = Field(default=None, max_length=50)  # None = search all active documents
 
 
 class SourceInfo(BaseModel):

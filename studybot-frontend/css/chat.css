@@ -38,34 +38,6 @@
   color: white;
 }
 
-/* ===== Hover tooltip ===== */
-.icon-action-btn[data-tooltip]::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  bottom: 48px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  color: var(--color-text);
-  font-size: 11px;
-  padding: 5px 9px;
-  border-radius: var(--radius-sm);
-  white-space: nowrap;
-  box-shadow: var(--shadow-card);
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.12s ease;
-  pointer-events: none;
-  z-index: 70;
-}
-
-.icon-action-btn[data-tooltip]:hover::after,
-.icon-action-btn[data-tooltip]:focus-visible::after {
-  opacity: 1;
-  visibility: visible;
-}
-
 /* ===== Empty state ===== */
 .empty-state {
   flex: 1;
@@ -81,6 +53,11 @@
 .empty-state-icon {
   font-size: 44px;
   margin-bottom: 6px;
+}
+
+.empty-state-icon svg {
+  width: 44px;
+  height: 44px;
 }
 
 .empty-state h2 {
@@ -159,23 +136,35 @@
 .message.bot {
   align-self: flex-start;
   background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
   border-bottom-left-radius: 4px;
 }
 
 .message.user {
   align-self: flex-end;
-  /* background: var(--color-primary);
-  color: white; */
-  background: var(--color-surface-alt);
-  color: var(--color-text);
+  background: var(--color-primary);
+  color: #ffffff;
   border-bottom-right-radius: 4px;
 }
 
+.message.user .message-content a {
+  color: #ffffff;
+  text-decoration: underline;
+}
+
 .message .source-tag {
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 11px;
   color: var(--color-text-dim);
   margin-top: 8px;
+}
+
+.message .source-tag svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
 }
 
 .message-actions {
@@ -191,6 +180,84 @@
   font-size: 12px;
   cursor: pointer;
   padding: 2px 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.message-actions button svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+.message-actions button:hover {
+  color: var(--color-text);
+}
+
+/* User message actions (Edit, Copy) sit BELOW the bubble as a separate
+   flex sibling, right-aligned to it, icon-only, no margin-top gap from
+   the base rule above since it's not nested inside the bubble. */
+.user-message-actions {
+  align-self: flex-end;
+  margin-top: -2px;
+}
+
+.user-message-actions button {
+  padding: 4px;
+  border-radius: var(--radius-sm);
+}
+
+.user-message-actions button:hover {
+  background: var(--color-surface-alt);
+}
+
+.message.user .message-content a {
+  color: #ffffff;
+  text-decoration: underline;
+}
+
+.message .source-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--color-text-dim);
+  margin-top: 8px;
+}
+
+.message .source-tag svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+.message-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.message-actions button {
+  background: none;
+  border: none;
+  color: var(--color-text-dim);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.message-actions button svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+.message.user .message-actions button svg {
+  color: inherit;
 }
 
 .message-actions button:hover {
@@ -289,6 +356,13 @@
   color: var(--color-text-dim);
   cursor: pointer;
   font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.doc-selector-close svg {
+  width: 16px;
+  height: 16px;
 }
 
 .doc-selector-option {
@@ -395,9 +469,17 @@
 .sources-panel-group { margin-bottom: 8px; }
 .sources-panel-group:last-child { margin-bottom: 0; }
 .sources-panel-filename {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   font-weight: 600;
   margin-bottom: 4px;
   color: var(--color-text);
+}
+.sources-panel-filename svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }
 .sources-panel-chunk {
   color: var(--color-text-dim);

@@ -79,6 +79,10 @@ CHUNK_SIZE_TOKENS: int = int(optional_env("CHUNK_SIZE_TOKENS", "400"))
 CHUNK_OVERLAP_TOKENS: int = int(optional_env("CHUNK_OVERLAP_TOKENS", "50"))
 
 CHAT_TOP_K: int = int(optional_env("CHAT_TOP_K", "5"))
+CHAT_MAX_COSINE_DISTANCE: float = float(optional_env("CHAT_MAX_COSINE_DISTANCE", "0.8"))
+CHAT_RETRIEVAL_CANDIDATES: int = int(
+    optional_env("CHAT_RETRIEVAL_CANDIDATES", str(CHAT_TOP_K * 4))
+)
 
 HYBRID_MODE_ENABLED: bool = optional_env("HYBRID_MODE_ENABLED", "false").lower() == "true"
 
@@ -88,3 +92,6 @@ SQL_ECHO: bool = optional_env("SQL_ECHO", "false").lower() == "true"
 # you want short in a test environment, longer in prod.
 ACCESS_TOKEN_EXPIRE_MINUTES: int = int(optional_env("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 REFRESH_TOKEN_EXPIRE_DAYS: int = int(optional_env("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
+
+AUTH_COOKIE_SECURE: bool = optional_env("AUTH_COOKIE_SECURE", "false").lower() == "true"
+AUTH_COOKIE_SAMESITE: str = optional_env("AUTH_COOKIE_SAMESITE", "lax")
