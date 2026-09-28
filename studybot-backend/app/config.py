@@ -92,6 +92,3 @@ SQL_ECHO: bool = optional_env("SQL_ECHO", "false").lower() == "true"
 # you want short in a test environment, longer in prod.
 ACCESS_TOKEN_EXPIRE_MINUTES: int = int(optional_env("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 REFRESH_TOKEN_EXPIRE_DAYS: int = int(optional_env("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
-
-AUTH_COOKIE_SECURE: bool = optional_env("AUTH_COOKIE_SECURE", "false").lower() == "true"
-AUTH_COOKIE_SAMESITE: str = optional_env("AUTH_COOKIE_SAMESITE", "lax")

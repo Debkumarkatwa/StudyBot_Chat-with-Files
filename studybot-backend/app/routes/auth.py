@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select, update
@@ -13,7 +13,7 @@ from app.schemas.user import UserSignup, UserLogin, UserResponse, TokenResponse,
 from app.security import hash_password, verify_password
 from app.storage import delete_file
 from app.jwt_utils import create_access_token, create_refresh_token, decode_token
-from app.config import AUTH_COOKIE_SECURE, AUTH_COOKIE_SAMESITE, REFRESH_TOKEN_EXPIRE_DAYS
+from app.config import REFRESH_TOKEN_EXPIRE_DAYS
 import jwt as pyjwt
 
 from app.dependencies import get_current_user
@@ -27,22 +27,6 @@ def _refresh_token_record(token: str, user_id: str) -> RefreshToken:
         jti=decoded["jti"],
         user_id=user_id,
         expires_at=datetime.fromtimestamp(decoded["exp"], tz=timezone.utc),
-    )
-
-
-def _set_auth_cookies(response: Response, access_token: str, refresh_token: str) -> None:
-    cookie_options = {
-        "httponly": True,
-        "secure": AUTH_COOKIE_SECURE,
-        "samesite": AUTH_COOKIE_SAMESITE,
-        "path": "/",
-    }
-    response.set_cookie("studybot_access_token", access_token, max_age=1800, **cookie_options)
-    response.set_cookie(
-        "studybot_refresh_token",
-        refresh_token,
-        max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
-        **cookie_options,
     )
 
 
@@ -73,7 +57,6 @@ async def signup(payload: UserSignup, db: AsyncSession = Depends(get_db)):
 @router.post("/login", response_model=TokenResponse)
 async def login(
     payload: UserLogin,
-    response: Response,
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(select(User).where(User.email == payload.email))
@@ -97,7 +80,6 @@ async def login(
     refresh_token = create_refresh_token(str(user.id))
     db.add(_refresh_token_record(refresh_token, str(user.id)))
     await db.commit()
-    _set_auth_cookies(response, access_token, refresh_token)
 
     return TokenResponse(access_token=access_token, refresh_token=refresh_token)
 
@@ -105,11 +87,9 @@ async def login(
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh(
     payload: RefreshRequest,
-    response: Response,
-    refresh_cookie: str | None = Cookie(default=None, alias="studybot_refresh_token"),
     db: AsyncSession = Depends(get_db),
 ):
-    refresh_token = payload.refresh_token or refresh_cookie
+    refresh_token = payload.refresh_token
     if not refresh_token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token is required.")
 
@@ -134,36 +114,40 @@ async def refresh(
     if result.scalar_one_or_none() is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token.")
 
-    token_result = await db.execute(
-        select(RefreshToken).where(
+    # Atomically consume the token: only one concurrent request can flip
+    # revoked_at from NULL to a timestamp. Any other request with the same
+    # token matches zero rows and is rejected.
+    now = datetime.now(timezone.utc)
+    consume_result = await db.execute(
+        update(RefreshToken)
+        .where(
             RefreshToken.jti == jti,
             RefreshToken.user_id == user_id,
             RefreshToken.revoked_at.is_(None),
-            RefreshToken.expires_at > datetime.now(timezone.utc),
+            RefreshToken.expires_at > now,
         )
+        .values(revoked_at=now)
+        .returning(RefreshToken.jti)
+        .execution_options(synchronize_session=False)
     )
-    stored_token = token_result.scalar_one_or_none()
-    if stored_token is None:
+    if consume_result.scalar_one_or_none() is None:
+        await db.rollback()
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token has already been used.")
 
     new_access_token = create_access_token(user_id)
     new_refresh_token = create_refresh_token(user_id)
-    stored_token.revoked_at = datetime.now(timezone.utc)
     db.add(_refresh_token_record(new_refresh_token, user_id))
     await db.commit()
-    _set_auth_cookies(response, new_access_token, new_refresh_token)
-
+    
     return TokenResponse(access_token=new_access_token, refresh_token=new_refresh_token)
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def logout(
     payload: LogoutRequest,
-    response: Response,
-    refresh_cookie: str | None = Cookie(default=None, alias="studybot_refresh_token"),
     db: AsyncSession = Depends(get_db),
 ):
-    refresh_token = payload.refresh_token or refresh_cookie
+    refresh_token = payload.refresh_token
     if refresh_token:
         try:
             decoded = decode_token(refresh_token)
@@ -176,9 +160,6 @@ async def logout(
                     await db.commit()
         except pyjwt.InvalidTokenError:
             pass
-
-    response.delete_cookie("studybot_access_token", path="/")
-    response.delete_cookie("studybot_refresh_token", path="/")
 
 
 @router.get("/me", response_model=UserResponse)
@@ -198,7 +179,7 @@ async def update_name(
     return current_user
 
 
-@router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/change-password", response_model=TokenResponse)
 async def change_password(
     payload: ChangePasswordRequest,
     current_user: User = Depends(get_current_user),
@@ -206,11 +187,14 @@ async def change_password(
 ):
     if not verify_password(payload.current_password, current_user.hashed_password):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="Current password is incorrect.",
         )
 
+    user_id = str(current_user.id)
     current_user.hashed_password = hash_password(payload.new_password)
+
+    # Kill every existing refresh token...
     await db.execute(
         update(RefreshToken)
         .where(
@@ -219,8 +203,14 @@ async def change_password(
         )
         .values(revoked_at=datetime.now(timezone.utc))
     )
+
+    # ...then issue a fresh pair for THIS session only.
+    new_access_token = create_access_token(user_id)
+    new_refresh_token = create_refresh_token(user_id)
+    db.add(_refresh_token_record(new_refresh_token, user_id))
     await db.commit()
 
+    return TokenResponse(access_token=new_access_token, refresh_token=new_refresh_token)
 
 @router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_account(
@@ -230,7 +220,7 @@ async def delete_account(
 ):
     if not verify_password(payload.password, current_user.hashed_password):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="Password is incorrect.",
         )
 

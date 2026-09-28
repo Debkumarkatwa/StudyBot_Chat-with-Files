@@ -8,22 +8,36 @@ const API = {
   _BIN_MAX: CONFIG.MAX_BIN_FILES,
   _BIN_RETENTION_DAYS: CONFIG.BIN_RETENTION_DAYS,
 
-  async _refreshAccessToken() {
-    const storedRefreshToken = localStorage.getItem(this._REFRESH_TOKEN_KEY);
-    if (!storedRefreshToken) return false;
+  // Holds the in-flight refresh request. While it is set, every caller
+  // shares it instead of sending its own /auth/refresh.
+  _refreshPromise: null,
 
-    const res = await fetch(`${CONFIG.API_BASE_URL}/auth/refresh`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refresh_token: storedRefreshToken }),
-    });
+  _refreshAccessToken() {
+    if (this._refreshPromise) return this._refreshPromise;
 
-    if (!res.ok) return false;
+    this._refreshPromise = (async () => {
+      const storedRefreshToken = localStorage.getItem(this._REFRESH_TOKEN_KEY);
+      if (!storedRefreshToken) return false;
 
-    const tokens = await res.json();
-    localStorage.setItem(this._TOKEN_KEY, tokens.access_token);
-    localStorage.setItem(this._REFRESH_TOKEN_KEY, tokens.refresh_token);
-    return true;
+      const res = await fetch(`${CONFIG.API_BASE_URL}/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh_token: storedRefreshToken }),
+      });
+
+      if (!res.ok) return false;
+
+      const tokens = await res.json();
+      localStorage.setItem(this._TOKEN_KEY, tokens.access_token);
+      localStorage.setItem(this._REFRESH_TOKEN_KEY, tokens.refresh_token);
+      return true;
+    })()
+      .catch(() => false)
+      .finally(() => {
+        this._refreshPromise = null;
+      });
+
+    return this._refreshPromise;
   },
 
   async _apiFetch(path, options = {}, allowRefresh = true) {
@@ -41,6 +55,14 @@ const API = {
 
     const isPublicAuthPath = path === "/auth/login" || path === "/auth/signup";
     if (res.status === 401 && allowRefresh && path !== "/auth/refresh" && !isPublicAuthPath) {
+      // Another request may have already refreshed while this one was in
+      // flight. If the stored token is no longer the one we sent, just retry
+      // with the new one instead of spending the refresh token again.
+      const currentToken = localStorage.getItem(this._TOKEN_KEY);
+      if (currentToken && currentToken !== token) {
+        return this._apiFetch(path, options, false);
+      }
+
       const refreshed = await this._refreshAccessToken();
       if (refreshed) return this._apiFetch(path, options, false);
       this._clearAuthState();
@@ -51,7 +73,7 @@ const API = {
       let detail = "Something went wrong. Please try again.";
       try {
         const body = await res.json();
-        detail = body.detail || detail;
+        detail = typeof body.detail === "string" ? body.detail : detail;
       } catch { /* non-JSON error body, keep default message */ }
       throw new Error(detail);
     }
@@ -142,10 +164,12 @@ const API = {
   },
 
   async changePassword(currentPassword, newPassword) {
-    await this._apiFetch("/auth/change-password", {
+    const tokens = await this._apiFetch("/auth/change-password", {
       method: "POST",
       body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
     });
+    localStorage.setItem(this._TOKEN_KEY, tokens.access_token);
+    localStorage.setItem(this._REFRESH_TOKEN_KEY, tokens.refresh_token);
     return { success: true };
   },
 

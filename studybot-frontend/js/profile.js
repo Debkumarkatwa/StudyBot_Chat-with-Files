@@ -88,7 +88,7 @@ function updateStrengthUI(password) {
   } else if (valid) {
     text.textContent = "Strong password ✓";
   } else if (level === "medium") {
-    text.textContent = "Getting there — add a number or letter, and reach 8 characters";
+    text.textContent = "Getting there — add a number and letter, and reach 8 characters";
   } else {
     text.textContent = "Too weak — needs 8+ characters, a letter, and a number";
   }

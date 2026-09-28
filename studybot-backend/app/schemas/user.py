@@ -1,7 +1,13 @@
 import uuid
 from datetime import datetime
+import re
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
+
+def _check_password_strength(value: str) -> str:
+    if not re.search(r"[A-Za-z]", value) or not re.search(r"\d", value):
+        raise ValueError("Password must contain at least one letter and one number.")
+    return value
 
 
 class UserSignup(BaseModel):
@@ -13,6 +19,11 @@ class UserSignup(BaseModel):
     @classmethod
     def normalize_email(cls, value: EmailStr) -> str:
         return str(value).strip().casefold()
+
+    @field_validator("password")
+    @classmethod
+    def password_strength(cls, value: str) -> str:
+        return _check_password_strength(value)
 
 
 class UserLogin(BaseModel):
@@ -52,6 +63,11 @@ class UpdateNameRequest(BaseModel):
 class ChangePasswordRequest(BaseModel):
     current_password: str
     new_password: str = Field(min_length=8, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def password_strength(cls, value: str) -> str:
+        return _check_password_strength(value)
 
 
 class DeleteAccountRequest(BaseModel):

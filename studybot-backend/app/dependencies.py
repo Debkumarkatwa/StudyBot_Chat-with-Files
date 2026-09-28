@@ -1,7 +1,7 @@
 import uuid
 
 import jwt as pyjwt
-from fastapi import Cookie, Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,7 +17,6 @@ bearer_scheme = HTTPBearer(auto_error=False)
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
-    access_token: str | None = Cookie(default=None, alias="studybot_access_token"),
     db: AsyncSession = Depends(get_db),
 ) -> User:
     credentials_error = HTTPException(
@@ -26,9 +25,9 @@ async def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
 
-    token = credentials.credentials if credentials else access_token
-    if not token:
+    if credentials is None:
         raise credentials_error
+    token = credentials.credentials
 
     try:
         payload = decode_token(token)
