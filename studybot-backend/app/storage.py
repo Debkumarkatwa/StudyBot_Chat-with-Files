@@ -1,9 +1,27 @@
 import uuid
 import os
+import re
+import unicodedata
 from supabase import create_client, Client
-from app.config import SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_BUCKET_NAME
+
+from app.config import SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_BUCKET_NAME, MAX_STORAGE_NAME_LEN
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
+
+def _safe_storage_name(filename: str | None) -> str:
+    """Storage keys only contain [A-Za-z0-9._-]. The user's original
+    filename is kept separately in the database for display."""
+    name = (filename or "").replace("\\", "/").split("/")[-1].strip()
+    name = unicodedata.normalize("NFKD", name)
+    name = "".join(ch for ch in name if not unicodedata.combining(ch))
+    name = re.sub(r"[^A-Za-z0-9._-]+", "_", name).lstrip(".")
+    if not name:
+        return "unnamed_file"
+    if len(name) > MAX_STORAGE_NAME_LEN:
+        base, ext = os.path.splitext(name)
+        name = (base[: max(1, MAX_STORAGE_NAME_LEN - len(ext))] + ext)[:MAX_STORAGE_NAME_LEN]
+    return name
 
 
 def build_storage_path(owner_id: uuid.UUID, filename: str | None) -> str:
@@ -14,11 +32,7 @@ def build_storage_path(owner_id: uuid.UUID, filename: str | None) -> str:
     a file with the same name never overwrites the original.
     """
     unique_prefix = uuid.uuid4().hex
-    safe_filename = os.path.basename(filename or "unnamed_file").strip().replace(" ", "_")
-    if not safe_filename:
-        safe_filename = "unnamed_file"
-    return f"{owner_id}/{unique_prefix}_{safe_filename}"
-
+    return f"{owner_id}/{unique_prefix}_{_safe_storage_name(filename)}"
 
 def upload_file(storage_path: str, file_bytes: bytes, content_type: str) -> None:
     """

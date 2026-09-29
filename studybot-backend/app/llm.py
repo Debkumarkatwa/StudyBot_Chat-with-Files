@@ -1,9 +1,18 @@
 import asyncio
+
+import httpx
 from groq import Groq
 
 from app.config import GROQ_API_KEY, HYBRID_MODE_ENABLED, GROQ_MODEL_NAME
 
 client = Groq(api_key=GROQ_API_KEY)
+
+
+def is_hybrid_answer(answer: str) -> bool:
+    """Detect hybrid responses whether the warning emoji is present or not."""
+    normalized = answer.replace("⚠️", "").lower()
+    return "this part is not from your uploaded documents" in normalized
+
 
 def _build_system_prompt(hybrid: bool) -> str:
     if hybrid:
@@ -14,7 +23,7 @@ def _build_system_prompt(hybrid: bool) -> str:
             "that context and cite the source filename(s). If the context is "
             "insufficient or missing, you MAY answer from your own general "
             "knowledge — but you MUST clearly prefix that portion of your answer "
-            "with: '⚠️ This part is not from your uploaded documents:-\n' so the "
+            "with: 'This part is not from your uploaded documents:\n' so the "
             "student knows exactly which information is grounded and which isn't."
         )
     return (
@@ -41,6 +50,9 @@ def _build_context_block(chunks_with_sources: list[tuple[str, str]]) -> str:
 
 
 async def generate_answer(question: str, chunks_with_sources: list[tuple[str, str]], hybrid: bool) -> str:
+    if not chunks_with_sources and not hybrid:
+        return "I couldn't find this in your uploaded documents."
+
     system_prompt = _build_system_prompt(hybrid)
     context_block = _build_context_block(chunks_with_sources)
 
@@ -49,14 +61,21 @@ async def generate_answer(question: str, chunks_with_sources: list[tuple[str, st
         f"Question: {question}"
     )
 
-    response = await asyncio.to_thread(
-        client.chat.completions.create,
-        model=GROQ_MODEL_NAME,
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_message},
-        ],
-        temperature=0.3,
-    )
-
-    return response.choices[0].message.content
+    try:
+        response = await asyncio.to_thread(
+            client.chat.completions.create,
+            model=GROQ_MODEL_NAME,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_message},
+            ],
+            temperature=0.3,
+        )
+        return response.choices[0].message.content
+    except httpx.HTTPStatusError as exc:
+        status_code = getattr(exc.response, "status_code", None)
+        if status_code in {429, 500, 502, 503, 504}:
+            return "Sorry, the answer service is temporarily unavailable. Please try again in a moment."
+        raise
+    except Exception:
+        return "Sorry, the answer service is temporarily unavailable. Please try again in a moment."

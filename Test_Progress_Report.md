@@ -57,30 +57,30 @@ Not run (no DB / keys in sandbox): the app itself, real Jina/Groq behaviour, rea
 ## Phase 2 — Robustness
 
 **Carried from Phase 0:**
-- [ ] **Remove retrieval dead code.** Delete the unused `candidate_ids` block and `CHAT_RETRIEVAL_CANDIDATES` from `retrieval.py`, `config.py`, `.env.sample`.
+- [ X ] **Remove retrieval dead code.** Delete the unused `candidate_ids` block and `CHAT_RETRIEVAL_CANDIDATES` from `retrieval.py`, `config.py`, `.env.sample`.
   - Done when: no reference to `CHAT_RETRIEVAL_CANDIDATES` remains anywhere.
-- [ ] **Replace `Test/test_retrieval.py`** (currently string-greps SQL and still asserts the old candidate pool → will fail) with a two-user integration test.
+- [ X ] **Replace `Test/test_retrieval.py`** (currently string-greps SQL and still asserts the old candidate pool → will fail) with a two-user integration test.
   - Done when: user B never sees user A's chunks; user A still gets results when B has many closer chunks; deleted/failed docs excluded.
   - Also: `SELECT extversion FROM pg_extension WHERE extname='vector'`; if ≥ 0.8 and HNSW is kept, use `SET LOCAL hnsw.iterative_scan = relaxed_order`.
-- [ ] **Clean-install check.** Fresh venv → `pip install -r requirements.txt` → `python -c "import app.main"` → `python -m Test.test_groq`.
+- [ X ] **Clean-install check.** Fresh venv → `pip install -r requirements.txt` → `python -c "import app.main"` → `python -m Test.test_groq`.
   - Done when: all three pass.
 
 **New work:**
-- [ ] **Upload read cap.** `await file.read(MAX_FILE_SIZE + 1)`.
+- [ X ] **Upload read cap.** `await file.read(MAX_FILE_SIZE + 1)`.
   - Done when: an 11 MB file gets 413 without the server reading it all.
-- [ ] **Filename handling** [S-06]. Reject > 255 chars up front; sanitize storage keys to `[A-Za-z0-9._-]`.
+- [ X ] **Filename handling** [S-06]. Reject > 255 chars up front; sanitize storage keys to `[A-Za-z0-9._-]`.
   - Done when: tests pass for empty, `None`, 300-char, unicode, `[brackets]` names.
-- [ ] **NUL byte strip** in `extract_text` (`text.replace("\x00", "")`).
+- [ X ] **NUL byte strip** in `extract_text` (`text.replace("\x00", "")`).
   - Done when: text containing `\x00` processes without a DB error.
-- [ ] **Jina batching + retry.** ~64 chunks per request; backoff on 429/5xx.
+- [ X ] **Jina batching + retry.** ~64 chunks per request; backoff on 429/5xx.
   - Done when: a 500+ chunk PDF embeds; a mocked 429 is retried.
-- [ ] **Groq error handling + canned reply.** 503 with friendly message on failure; skip the LLM call when nothing retrieved and hybrid is off.
+- [ X ] **Groq error handling + canned reply.** 503 with friendly message on failure; skip the LLM call when nothing retrieved and hybrid is off.
   - Done when: mocked 429 → friendly message; empty retrieval → zero Groq calls.
-- [ ] **Hybrid marker** [M-04]. Match `"This part is not from your uploaded documents"` without the emoji.
+- [ X ] **Hybrid marker** [M-04]. Match `"This part is not from your uploaded documents"` without the emoji.
   - Done when: a reply with the emoji stripped is still labelled general knowledge.
-- [ ] **Source tag rules.** Show "From your documents" only when `sources.length > 0`.
+- [ X ] **Source tag rules.** Show "From your documents" only when `sources.length > 0`.
   - Done when: a not-found answer has no document tag.
-- [ ] **Session-expiry redirect** to `login.html`.
+- [ X ] **Session-expiry redirect** to `login.html`.
   - Done when: an expired session in chat/documents lands on login.
 - [ ] **Upload quota race** [L-03]. Low priority; only after everything above is green.
 

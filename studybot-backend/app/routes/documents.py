@@ -27,7 +27,19 @@ async def upload_document(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-):
+):    
+    # --- 0. Filename check ---
+    if not file.filename or not file.filename.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The uploaded file must have a name.",
+        )
+    if len(file.filename) > 255:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File name is too long (maximum 255 characters).",
+        )
+    
     # --- 1. MIME type check ---
     if file.content_type not in ALLOWED_MIME_TYPES:
         raise HTTPException(
@@ -39,10 +51,10 @@ async def upload_document(
     # NOTE: for very large files this isn't the most memory-efficient approach
     # (streaming would be better), but for study documents under MAX_FILE_SIZE_MB
     # this is simple and fine at our current scale.
-    file_bytes = await file.read()
+    file_bytes = await file.read(MAX_FILE_SIZE + 1)
     if len(file_bytes) > MAX_FILE_SIZE:
         raise HTTPException(
-            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail=f"File exceeds the maximum allowed size.",
         )
 

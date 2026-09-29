@@ -61,4 +61,5 @@ def extract_text(file_bytes: bytes, mime_type: str) -> str:
         raise ValueError(f"No parser registered for MIME type: {mime_type}")
 
     text = parser(file_bytes)
+    text = text.replace("\x00", "")
     return text.strip()

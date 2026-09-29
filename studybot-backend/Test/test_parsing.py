@@ -9,6 +9,12 @@ import mimetypes
 from app.parsing import extract_text
 
 
+def test_extract_text_strips_nul_bytes():
+    text = extract_text(b"alpha\x00beta\x00gamma", "text/plain")
+    assert text == "alphabetagamma"
+    assert "\x00" not in text
+
+
 def main():
     print("Usage: Text Parsing Testing Started...............")
     

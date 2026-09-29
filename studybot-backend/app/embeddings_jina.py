@@ -1,3 +1,5 @@
+import time
+
 import httpx
 
 from app.config import JINA_API_KEY
@@ -17,6 +19,9 @@ from app.config import JINA_API_KEY
 _JINA_API_URL = "https://api.jina.ai/v1/embeddings"
 _JINA_MODEL_NAME = "jina-embeddings-v5-text-small"
 _EMBEDDING_DIM = 512
+_JINA_BATCH_SIZE = 64
+_JINA_MAX_RETRIES = 4
+_RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 
 _HEADERS = {
     "Authorization": f"Bearer {JINA_API_KEY}",
@@ -28,21 +33,47 @@ _HEADERS = {
 _client = httpx.Client(timeout=30.0)
 
 
-def _call_jina(texts: list[str], task: str) -> list[list[float]]:
+def _request_embedding_batch(batch: list[str], task: str) -> list[list[float]]:
     payload = {
         "model": _JINA_MODEL_NAME,
-        "task": task,  # "retrieval.passage" for documents, "retrieval.query" for queries
+        "task": task,
         "dimensions": _EMBEDDING_DIM,
-        "input": texts,
+        "input": batch,
     }
-    response = _client.post(_JINA_API_URL, headers=_HEADERS, json=payload)
-    response.raise_for_status()
-    data = response.json()
 
-    # Jina's response items aren't guaranteed to preserve input order —
-    # sort by the "index" field to be safe before returning.
-    sorted_items = sorted(data["data"], key=lambda item: item["index"])
-    return [item["embedding"] for item in sorted_items]
+    for attempt in range(_JINA_MAX_RETRIES):
+        try:
+            response = _client.post(_JINA_API_URL, headers=_HEADERS, json=payload)
+            if response.status_code in _RETRYABLE_STATUS_CODES:
+                raise httpx.HTTPStatusError(
+                    f"Jina responded with status {response.status_code}",
+                    request=httpx.Request("POST", _JINA_API_URL),
+                    response=response,
+                )
+            response.raise_for_status()
+            data = response.json()
+
+            sorted_items = sorted(data["data"], key=lambda item: item["index"])
+            return [item["embedding"] for item in sorted_items]
+        except httpx.HTTPStatusError as exc:
+            status_code = exc.response.status_code
+            if status_code in _RETRYABLE_STATUS_CODES and attempt < _JINA_MAX_RETRIES - 1:
+                time.sleep(2 ** attempt)
+                continue
+            raise
+
+    raise RuntimeError(f"Jina embedding request failed for {len(batch)} texts after {_JINA_MAX_RETRIES} attempts.")
+
+
+def _call_jina(texts: list[str], task: str) -> list[list[float]]:
+    if not texts:
+        return []
+
+    all_embeddings: list[list[float]] = []
+    for start in range(0, len(texts), _JINA_BATCH_SIZE):
+        batch = texts[start:start + _JINA_BATCH_SIZE]
+        all_embeddings.extend(_request_embedding_batch(batch, task))
+    return all_embeddings
 
 
 def generate_embeddings(texts: list[str]) -> list[list[float]]:

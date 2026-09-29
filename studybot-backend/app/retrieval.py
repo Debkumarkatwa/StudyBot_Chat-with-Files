@@ -1,7 +1,7 @@
 import uuid
 import asyncio
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.chunk import Chunk
@@ -31,11 +31,12 @@ async def retrieve_relevant_chunks(
         Document.status == DocumentStatus.active,
     ]
 
-    distance = Chunk.embedding.cosine_distance(query_embedding)
-
     if document_ids:
         filters.append(Document.id.in_(document_ids))
 
+    distance = Chunk.embedding.cosine_distance(query_embedding)
+
+    await db.execute(text("SET LOCAL hnsw.iterative_scan = strict_order"))
     result = await db.execute(
         select(Chunk, Document.filename)
         .join(Document, Chunk.document_id == Document.id)

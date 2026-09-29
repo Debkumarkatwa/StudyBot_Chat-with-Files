@@ -70,6 +70,7 @@ GROQ_MODEL_NAME: str = require_env("GROQ_MODEL_NAME")
 # Fixed bug: this used to read "MAX_FILE_SIZE_MB", a name that doesn't
 # exist anywhere in .env.sample — .env could never override it.
 MAX_FILE_SIZE: int = int(optional_env("MAX_FILE_SIZE_BYTES", "10485760"))  # 10 MB
+MAX_STORAGE_NAME_LEN: int = int(optional_env("MAX_STORAGE_NAME_LEN", "100"))
 
 MAX_ACTIVE_DOCUMENTS: int = int(optional_env("MAX_ACTIVE_DOCUMENTS", "3"))
 MAX_BIN_DOCUMENTS: int = int(optional_env("MAX_BIN_DOCUMENTS", "5"))
@@ -80,9 +81,6 @@ CHUNK_OVERLAP_TOKENS: int = int(optional_env("CHUNK_OVERLAP_TOKENS", "50"))
 
 CHAT_TOP_K: int = int(optional_env("CHAT_TOP_K", "5"))
 CHAT_MAX_COSINE_DISTANCE: float = float(optional_env("CHAT_MAX_COSINE_DISTANCE", "0.8"))
-CHAT_RETRIEVAL_CANDIDATES: int = int(
-    optional_env("CHAT_RETRIEVAL_CANDIDATES", str(CHAT_TOP_K * 4))
-)
 
 HYBRID_MODE_ENABLED: bool = optional_env("HYBRID_MODE_ENABLED", "false").lower() == "true"
 

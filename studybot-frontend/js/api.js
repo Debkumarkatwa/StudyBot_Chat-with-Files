@@ -284,7 +284,11 @@ const API = {
 
     return {
       answer: res.answer,
-      source: res.hybrid_used ? "general_ai" : "document",
+      source: res.hybrid_used
+        ? "general_ai"
+        : Array.isArray(res.sources) && res.sources.length > 0
+          ? "document"
+          : null,
       sources: res.sources,
     };
   },

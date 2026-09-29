@@ -5,7 +5,7 @@ from app.database import get_db
 from app.models.user import User
 from app.dependencies import get_current_user
 from app.retrieval import retrieve_relevant_chunks
-from app.llm import generate_answer
+from app.llm import generate_answer, is_hybrid_answer
 from app.schemas.chat import ChatRequest, ChatResponse, SourceInfo
 from app.config import HYBRID_MODE_ENABLED
 
@@ -27,7 +27,7 @@ async def ask_question(
 
     chunks_with_sources = [(chunk.content, filename) for chunk, filename in results]
     answer = await generate_answer(payload.question, chunks_with_sources, effective_hybrid)
-    hybrid_used = effective_hybrid and "⚠️ This part is not from your uploaded documents:" in answer
+    hybrid_used = effective_hybrid and is_hybrid_answer(answer)
 
     sources = [
         SourceInfo(filename=filename, chunk_preview=chunk.content[:150])
