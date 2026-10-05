@@ -1,7 +1,11 @@
 """
 Tests JWT access token creation and decoding.
-Run from the `backend/` folder: python Test/test_jwt.py
+Run from the backend folder: python -m Test.test_jwt
 """
+
+import sys
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 from app.jwt_utils import create_access_token, decode_token
 
@@ -23,6 +27,7 @@ def main():
         print("\n✅ PASSED: JWT create/decode works correctly.")
     else:
         print("\n❌ FAILED: Decoded payload doesn't match expected shape.")
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

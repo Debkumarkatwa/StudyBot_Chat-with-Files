@@ -82,36 +82,37 @@ Not run (no DB / keys in sandbox): the app itself, real Jina/Groq behaviour, rea
   - Done when: a not-found answer has no document tag.
 - [ X ] **Session-expiry redirect** to `login.html`.
   - Done when: an expired session in chat/documents lands on login.
-- [ ] **Upload quota race** [L-03]. Low priority; only after everything above is green.
+- [ X ] **Upload quota race** [L-03]. Serialize per-user quota decisions with a row lock.
+  - Done when: concurrent uploads contesting the final slot accept exactly one upload.
 
 ## Phase 3 — Chunker and retrieval quality [L-04, S-03]
 
-- [ ] **Overlap fix.** No overlap-only duplicate chunk; real overlap for paragraph-sized units.
+- [ X ] **Overlap fix.** No overlap-only duplicate chunk; real overlap for paragraph-sized units.
   - Done when: deterministic tests cover 45/390/45/390-token paragraphs, 120-token paragraphs, and exact-400 boundary. No chunk exceeds the limit; none is a strict prefix of another.
-- [ ] **Hard-split casing.** Check whether `_split_by_token_limit` lowercases text (BGE tokenizer is uncased); fix via character-offset splitting or a different tokenizer.
+- [ X ] **Hard-split casing.** Check whether `_split_by_token_limit` lowercases text (BGE tokenizer is uncased); preserve source text via character-offset splitting.
   - Done when: a chunk built from mixed-case unpunctuated text keeps its case.
-- [ ] **Tokenizer decision.** Keep `transformers` only for token counting, or swap to a lighter count. Document the choice.
-- [ ] **Chunking fixture test** [S-03]. Non-interactive, non-zero exit on failure.
+- [ X ] **Tokenizer decision.** Keep `transformers` only for token counting; Jina remains the embedding provider.
+- [ X ] **Chunking fixture test** [S-03]. Non-interactive, non-zero exit on failure.
   - Done when: `python -m Test.test_chunking` runs with no prompts.
 
 ## Phase 4 — UX and cleanup
 
-- [ ] **Full-name limit.** 15 → ~60 in HTML, `auth.js`, `profile.js`, `schemas/user.py`, and the "/ 15" counter.
-- [ ] **Font fallback.** `--font-main: "Inter", system-ui, sans-serif`.
-- [ ] **Chat height.** `100dvh` for `.chat-page` and the sidebar.
-- [ ] **Forgot-password page.** "Not available yet" instead of fake success.
-- [ ] **Landing copy.** Remove "page 12"; soften "no guessing" now that hybrid exists.
-- [ ] **Docs cleanup.** Fix README contradictions, test docstrings (`python -m Test.x`), the `database.py` "bug #1" comment, stale `b7c2…` migration header; drop `HF_TOKEN` from `.env.sample`; prune orphaned deps (`sympy`, `mpmath`, `networkx`, `joblib`, `threadpoolctl` — verify with `pip check`).
-- [ ] **Test exit codes.** `test_jwt`, `test_security`, `test_parsing`, `test_document_routes` must exit non-zero on failure; clean up test users.
+- [ X ] **Full-name limit.** 15 → 60 in HTML, `auth.js`, `profile.js`, `schemas/user.py`, and the "/ 60" counter.
+- [ X ] **Font fallback.** `--font-main: "Inter", system-ui, sans-serif`.
+- [ X ] **Chat height.** `100dvh` for `.chat-page` and the sidebar.
+- [ X ] **Forgot-password page.** "Not available yet" instead of fake success.
+- [ X ] **Landing copy.** Remove "page 12"; soften "no guessing" now that hybrid exists.
+- [ X ] **Docs cleanup.** Fix README contradictions, test docstrings (`python -m Test.x`), the `database.py` "bug #1" comment, stale `b7c2…` migration header; drop `HF_TOKEN` from `.env.sample`; prune orphaned deps (`sympy`, `mpmath`, `networkx`, `joblib`, `threadpoolctl` — verified with `pip check`).
+- [ X ] **Test exit codes.** `test_jwt`, `test_security`, `test_parsing`, `test_document_routes` exit non-zero on failure; document-route test cleans up its test user.
 
 ## Phase 5 — Close-out gates (nothing is "verified" until all pass)
 
-- [ ] Clean-install backend from `requirements.txt` and import `app.main`.
-- [ ] Alembic upgrade + autogenerate check; generated migration must be empty [S-07].
+- [ X ] Clean-install backend from `requirements.txt`, import `app.main`, and run `Test.test_groq`.
+- [ X ] Alembic upgrade + autogenerate check; generated migration is empty [S-07].
 - [ ] Browser checks: wrong-password login, mixed-case email, password-change revocation, session expiry, stale chat selection, failed-document counts, hybrid labels, recycle-bin expiry.
-- [ ] Simulated storage-failure test proves failed rows stay in the bin for retry [M-03].
-- [ ] Replace "17/17" / "10/10" claims with exact commands and committed assertions.
-- [ ] Update `Test_Reports.md`: items stay "implemented, unverified" until their test passes; L-01 marked "decided: Bearer".
+- [ X ] Simulated storage-failure test proves failed rows stay in the bin for retry [M-03].
+- [ X ] Replace historical test-count claims with exact commands and committed assertions.
+- [ X ] Update `Test_Reports.md`: items stay "implemented, unverified" until their test passes; L-01 marked "decided: Bearer".
 
 ## Working rules
 

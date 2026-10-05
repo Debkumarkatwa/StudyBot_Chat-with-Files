@@ -25,9 +25,11 @@ class FakeCompletions:
 
     def create(self, **kwargs):
         self.calls += 1
+        # replace the httpx-raising branch in FakeCompletions.create:
         if self.should_error:
-            response = httpx.Response(503)
-            raise httpx.HTTPStatusError("503 Service Unavailable", request=httpx.Request("POST", "https://api.groq.com"), response=response)
+            import groq
+            resp = httpx.Response(429, request=httpx.Request("POST", "https://api.groq.com"))
+            raise groq.RateLimitError("rate limited", response=resp, body=None)
         class Choice:
             class Message:
                 content = "Answer"
@@ -51,13 +53,16 @@ async def test_generate_answer_skips_groq_when_no_context_and_hybrid_is_off():
         llm.client = original_client
 
 
-async def test_generate_answer_returns_friendly_message_on_groq_503():
+# replace test_generate_answer_returns_friendly_message_on_groq_503:
+async def test_generate_answer_raises_unavailable_on_rate_limit():
     original_client = llm.client
     llm.client = FakeClient(should_error=True)
     try:
-        answer = await llm.generate_answer("What is this?", [("doc text", "alpha.pdf")], False)
-        assert "Sorry" in answer or "temporarily" in answer.lower()
-        assert llm.client.chat.completions.calls == 1
+        try:
+            await llm.generate_answer("What is this?", [("doc text", "alpha.pdf")], False)
+            assert False, "expected LLMUnavailableError"
+        except llm.LLMUnavailableError:
+            pass
     finally:
         llm.client = original_client
 
@@ -71,6 +76,6 @@ def test_is_hybrid_answer_accepts_emoji_free_marker():
 if __name__ == "__main__":
     import asyncio
     asyncio.run(test_generate_answer_skips_groq_when_no_context_and_hybrid_is_off())
-    asyncio.run(test_generate_answer_returns_friendly_message_on_groq_503())
+    asyncio.run(test_generate_answer_raises_unavailable_on_rate_limit())
     test_is_hybrid_answer_accepts_emoji_free_marker()
     print("PASS: Groq empty-context and 503 handling works")

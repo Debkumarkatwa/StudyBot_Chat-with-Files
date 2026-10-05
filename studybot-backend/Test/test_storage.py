@@ -1,6 +1,6 @@
 """
 Tests Supabase Storage connectivity: upload, signed URL, delete.
-Run from the `backend/` folder: python Test/test_storage.py
+Run from the backend folder: python -m Test.test_storage
 """
 
 import uuid

@@ -17,7 +17,7 @@
 
   --topnav-height: 67px;
 
-  --font-main: "Inter", "Times New Roman", serif;
+  --font-main: "Inter", system-ui, sans-serif;
 }
 
 /* ===== Light theme overrides ===== */

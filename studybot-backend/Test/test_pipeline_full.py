@@ -4,7 +4,7 @@ and embedding work correctly, completely separate from the API/upload
 endpoint/background task machinery. Isolates the core logic so if
 something breaks, we know exactly which stage failed.
 
-Run from the `backend/` folder: python Test/test_pipeline_full.py "path/to/file.pdf"
+Run from the backend folder: python -m Test.test_pipeline_full "path/to/file.pdf"
 """
 
 import sys
@@ -16,9 +16,15 @@ from app.embeddings_jina import generate_embeddings
 
 
 def main():
-    print("Usage: Whole Pipeline Testing Started...............")
-
-    file_path = input('Enter the File Path -->  ')
+    import os
+    if len(sys.argv) > 1:
+        file_path = sys.argv[1]
+    elif os.path.exists("../LLM Workflow and Transformer full.pdf"):
+        file_path = "../LLM Workflow and Transformer full.pdf"
+    elif os.path.exists("LLM Workflow and Transformer full.pdf"):
+        file_path = "LLM Workflow and Transformer full.pdf"
+    else:
+        file_path = input('Enter the File Path -->  ')
 
     print(f"\n[Step 0] Reading file: {file_path}")
     with open(file_path, "rb") as f:

@@ -1,7 +1,7 @@
 """add refresh token revocation
 
 Revision ID: b7c2d1e4f6a8
-Revises: 1a95e75f2f93
+Revises: 2e14e02c5a16
 Create Date: 2026-09-27
 
 """

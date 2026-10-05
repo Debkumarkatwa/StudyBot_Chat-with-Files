@@ -234,7 +234,10 @@ function renderMessage(text, sender, sourceTag, sources = []) {
   contentEl.className = "message-content";
   if (sender === "bot") {
     if (typeof marked !== "undefined" && typeof DOMPurify !== "undefined") {
-      contentEl.innerHTML = DOMPurify.sanitize(marked.parse(text));
+      contentEl.innerHTML = DOMPurify.sanitize(marked.parse(text), {
+        FORBID_TAGS: ["img", "style"],
+        FORBID_ATTR: ["style"],
+      });
     } else {
       contentEl.textContent = text;
     }

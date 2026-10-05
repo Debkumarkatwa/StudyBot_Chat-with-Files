@@ -1,13 +1,28 @@
 import re
+from pathlib import Path
 
+from huggingface_hub.constants import HF_HUB_CACHE
 from transformers import AutoTokenizer
 
 from app.config import CHUNK_SIZE_TOKENS, CHUNK_OVERLAP_TOKENS
 
+
+def _load_tokenizer():
+    model_name = "BAAI/bge-small-en-v1.5"
+    try:
+        return AutoTokenizer.from_pretrained(model_name)
+    except FileExistsError as error:
+        model_cache = Path(HF_HUB_CACHE) / "models--BAAI--bge-small-en-v1.5" / "snapshots"
+        snapshots = sorted(path for path in model_cache.iterdir() if path.is_dir())
+        if not snapshots:
+            raise error
+        return AutoTokenizer.from_pretrained(str(snapshots[-1]), local_files_only=True)
+
+
 # Loaded once at import time — reused for every chunking call.
 # This tokenizer is used only for chunk-sizing estimates. The embedding
 # provider is Jina, so these counts are not guaranteed to match its tokenizer.
-_tokenizer = AutoTokenizer.from_pretrained("BAAI/bge-small-en-v1.5")
+_tokenizer = _load_tokenizer()
 
 # We only ever use this tokenizer to COUNT tokens (for chunk sizing decisions),
 # never to feed oversized text directly into the model. Without this, HF's
@@ -35,12 +50,34 @@ def _split_into_sentences(text: str) -> list[str]:
 
 
 def _split_by_token_limit(text: str, max_tokens: int) -> list[str]:
-    token_ids = _tokenizer.encode(text, add_special_tokens=False)
-    return [
-        decoded.strip()
-        for start in range(0, len(token_ids), max_tokens)
-        if (decoded := _tokenizer.decode(token_ids[start:start + max_tokens], skip_special_tokens=True).strip())
-    ]
+    encoded = _tokenizer(
+        text,
+        add_special_tokens=False,
+        return_offsets_mapping=True,
+    )
+    offsets = encoded["offset_mapping"]
+    chunks: list[str] = []
+    for start in range(0, len(offsets), max_tokens):
+        end = min(start + max_tokens, len(offsets)) - 1
+        chunk = text[offsets[start][0]:offsets[end][1]].strip()
+        if chunk:
+            chunks.append(chunk)
+    return chunks
+
+
+def _token_tail(text: str, max_tokens: int) -> str:
+    if max_tokens <= 0:
+        return ""
+    encoded = _tokenizer(
+        text,
+        add_special_tokens=False,
+        return_offsets_mapping=True,
+    )
+    offsets = encoded["offset_mapping"]
+    if not offsets:
+        return ""
+    start = max(0, len(offsets) - max_tokens)
+    return text[offsets[start][0]:offsets[-1][1]].strip()
 
 
 def chunk_text(text: str) -> list[str]:
@@ -78,19 +115,18 @@ def chunk_text(text: str) -> list[str]:
             # Current chunk is full — finalize it
             chunks.append(" ".join(current_chunk_units))
 
-            # Build overlap: carry the last few units forward into the
-            # next chunk until we've got roughly CHUNK_OVERLAP_TOKENS worth
-            overlap_units: list[str] = []
-            overlap_token_count = 0
-            for prev_unit in reversed(current_chunk_units):
-                prev_tokens = count_tokens(prev_unit)
-                if overlap_token_count + prev_tokens > CHUNK_OVERLAP_TOKENS:
-                    break
-                overlap_units.insert(0, prev_unit)
-                overlap_token_count += prev_tokens
-
-            current_chunk_units = overlap_units
-            current_token_count = overlap_token_count
+            # Keep a token tail only when it fits beside the next unit. This
+            # avoids overlap-only chunks and preserves the hard size limit
+            # when the next unit is close to the limit.
+            available_overlap = min(
+                CHUNK_OVERLAP_TOKENS,
+                CHUNK_SIZE_TOKENS - unit_tokens,
+            )
+            overlap_text = _token_tail(
+                " ".join(current_chunk_units), available_overlap
+            )
+            current_chunk_units = [overlap_text] if overlap_text else []
+            current_token_count = count_tokens(overlap_text)
 
         current_chunk_units.append(unit)
         current_token_count += unit_tokens

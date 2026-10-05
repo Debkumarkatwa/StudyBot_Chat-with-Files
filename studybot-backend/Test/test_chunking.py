@@ -1,6 +1,6 @@
 """
 Tests parsing + chunking together (chunking needs real extracted text to be meaningful).
-Run from the `backend/` folder: python Test/test_chunking.py "path/to/file.pdf"
+Run from the backend folder: python -m Test.test_chunking "path/to/file.pdf"
 """
 
 import mimetypes
@@ -13,13 +13,26 @@ from app.config import CHUNK_SIZE_TOKENS
 def main():
     print("Usage: Chunking Pipeline Testing Started...............")
 
-    file_path = sys.argv[1] if len(sys.argv) > 1 else input('Enter the File Path -->  ')
+    if len(sys.argv) > 1:
+        file_path = sys.argv[1]
+        with open(file_path, "rb") as f:
+            file_bytes = f.read()
 
-    with open(file_path, "rb") as f:
-        file_bytes = f.read()
+        mime_type, _ = mimetypes.guess_type(file_path)
+        if mime_type is None:
+            print("❌ Could not detect MIME type from file extension.")
+            sys.exit(1)
+        text = extract_text(file_bytes, mime_type)
+    else:
+        print("No file supplied; using the deterministic chunking fixture.")
+        text = "\n\n".join(
+            [
+                " ".join(["AlphaFixtureToken"] * 120),
+                " ".join(["BetaFixtureToken"] * 120),
+                " ".join(["GammaFixtureToken"] * 120),
+            ]
+        )
 
-    mime_type, _ = mimetypes.guess_type(file_path)
-    text = extract_text(file_bytes, mime_type)
     print(f"Total extracted characters: {len(text)}")
 
     chunks = chunk_text(text)
@@ -31,9 +44,9 @@ def main():
 
     over_limit = [i for i, c in enumerate(chunks) if count_tokens(c) > CHUNK_SIZE_TOKENS]
     if chunks and not over_limit:
-        print(f"\n✅ PASSED: {len(chunks)} chunks created, all within the configured {CHUNK_SIZE_TOKENS}-token limit.")
+        print(f"\nPASSED: {len(chunks)} chunks created, all within the configured {CHUNK_SIZE_TOKENS}-token limit.")
     else:
-        print(f"\n❌ FAILED: Chunks {over_limit} exceed the configured {CHUNK_SIZE_TOKENS}-token limit." if over_limit else "\n❌ FAILED: No chunks produced.")
+        print(f"\nFAILED: Chunks {over_limit} exceed the configured {CHUNK_SIZE_TOKENS}-token limit." if over_limit else "\nFAILED: No chunks produced.")
         sys.exit(1)
 
 

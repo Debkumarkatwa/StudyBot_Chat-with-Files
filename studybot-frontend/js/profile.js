@@ -169,8 +169,8 @@ cancelProfileBtn.addEventListener("click", () => {
 
 saveProfileBtn.addEventListener("click", async () => {
   const name = profileNameInput.value.trim();
-  if (name.length < 3 || name.length > 15) {
-    setFieldError(profileNameInput, profileNameError, "Name must be 3–15 characters");
+  if (name.length < 3 || name.length > 60) {
+    setFieldError(profileNameInput, profileNameError, "Name must be 3–60 characters");
     return;
   }
   setFieldError(profileNameInput, profileNameError, "");

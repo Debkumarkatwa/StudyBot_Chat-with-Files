@@ -106,7 +106,7 @@ if (signupForm) {
 
   // Live full name validation + char counter
   fullNameInput.addEventListener("input", () => {
-    fullNameCount.textContent = `${fullNameInput.value.length} / 15`;
+    fullNameCount.textContent = `${fullNameInput.value.length} / 60`;
     if (fullNameInput.value.length > 0 && fullNameInput.value.trim().length < 3) {
       setFieldError(fullNameInput, fullNameError, "Name must be at least 3 characters");
     } else {
@@ -148,8 +148,8 @@ if (signupForm) {
 
     // Full name
     const nameVal = fullNameInput.value.trim();
-    if (nameVal.length < 3 || nameVal.length > 15) {
-      setFieldError(fullNameInput, fullNameError, "Name must be 3–15 characters");
+    if (nameVal.length < 3 || nameVal.length > 60) {
+      setFieldError(fullNameInput, fullNameError, "Name must be 3–60 characters");
       isValid = false;
     } else {
       setFieldError(fullNameInput, fullNameError, "");

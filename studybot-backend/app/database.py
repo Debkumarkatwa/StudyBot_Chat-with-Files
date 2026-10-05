@@ -8,7 +8,7 @@ engine = create_async_engine(
     echo=SQL_ECHO,
     pool_pre_ping=True,
     pool_recycle=300,
-    connect_args={"statement_cache_size": 0},  # while you're in here — this is bug #1, add it now
+    connect_args={"statement_cache_size": 0},
 )
 
 AsyncSessionLocal = async_sessionmaker(

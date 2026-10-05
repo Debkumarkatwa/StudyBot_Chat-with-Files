@@ -107,6 +107,9 @@ const API = {
     localStorage.removeItem(this._TOKEN_KEY);
     localStorage.removeItem(this._REFRESH_TOKEN_KEY);
     this.dispatchAppEvent("studybot:authchange", { authenticated: false });
+    
+    const PUBLIC_PAGES = ["login.html", "signup.html", "landing.html", "index.html", "forgot-password.html", "privacy.html", "terms.html"];
+    if (!PUBLIC_PAGES.some((p) => location.pathname.endsWith(p))) location.replace("login.html");
   },
   _formatDisplayName(email) {
     const localPart = String(email).split("@")[0] || "user";

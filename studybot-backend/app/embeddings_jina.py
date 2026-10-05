@@ -55,9 +55,16 @@ def _request_embedding_batch(batch: list[str], task: str) -> list[list[float]]:
 
             sorted_items = sorted(data["data"], key=lambda item: item["index"])
             return [item["embedding"] for item in sorted_items]
+        
         except httpx.HTTPStatusError as exc:
             status_code = exc.response.status_code
             if status_code in _RETRYABLE_STATUS_CODES and attempt < _JINA_MAX_RETRIES - 1:
+                time.sleep(2 ** attempt)
+                continue
+            raise
+        
+        except httpx.TransportError:          # timeouts, connection resets
+            if attempt < _JINA_MAX_RETRIES - 1:
                 time.sleep(2 ** attempt)
                 continue
             raise

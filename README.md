@@ -2,18 +2,21 @@
 This is the container of my Project "StudyBot". You will get everything about the project here. For details please read readme.md
 
 # Run The Frontend Server
+cd studybot-frontend
 python -m http.server 5500
 
 # Run The Backend Server
+cd studybot-backend
 uvicorn app.main:app --reload
 
 # Run The Test Scripts
-python -m Test.filename ( From Backend Folder `ex -> [python -m Test.test_jwt]`)
+cd studybot-backend
+python -m Test.test_jwt
 
 # StudyBot — V1 Status
 
 **Date:** August 2026
-**Status:** ✅ V1 complete — backend, frontend, and full frontend-backend integration all built, tested, and verified working end-to-end in a real browser.
+**Status:** V1 implementation is complete; verification and regression close-out remain in progress.
 
 ---
 

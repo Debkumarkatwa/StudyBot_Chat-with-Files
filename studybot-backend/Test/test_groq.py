@@ -1,6 +1,6 @@
 """
 Tests Groq API connectivity and a basic chat completion call.
-Run from the `backend/` folder: python Test/test_groq.py
+Run from the backend folder: python -m Test.test_groq
 """
 
 from groq import Groq

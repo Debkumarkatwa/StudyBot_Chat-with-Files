@@ -8,12 +8,17 @@ surface this way, not via unit-testing functions directly.
 Prerequisite: your FastAPI server must already be running
     uvicorn app.main:app --reload
 
-Run from the `backend/` folder: python Test/test_document_routes.py
+Run from the backend folder: python -m Test.test_document_routes
 """
 
+import atexit
 import io
+import sys
 import time
 import uuid
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 import requests
 
@@ -54,6 +59,19 @@ def main():
     check("Login succeeded", login_res.status_code == 200)
     token = login_res.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
+
+    def cleanup_test_user():
+        try:
+            session.delete(
+                f"{BASE_URL}/auth/me",
+                headers=headers,
+                json={"password": test_password},
+                timeout=10,
+            )
+        except requests.RequestException:
+            pass
+
+    atexit.register(cleanup_test_user)
 
     def upload_dummy_txt(name="test.txt", content=b"Hello StudyBot test content."):
         files = {"file": (name, io.BytesIO(content), "text/plain")}
@@ -131,6 +149,9 @@ def main():
             print(f"  - {f}")
     else:
         print("\n🎉 All document route checks passed.")
+
+    if failed:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

@@ -59,6 +59,12 @@ async def upload_document(
         )
 
     # --- 3. Active document count check ---
+    # Serialize quota decisions for this user so concurrent uploads cannot
+    # both pass the count before either one inserts its document row.
+    await db.execute(
+        select(User).where(User.id == current_user.id).with_for_update()
+    )
+
     # Counts BOTH 'processing' and 'active' — a document isn't "gone" from
     # the user's quota just because it hasn't finished embedding yet.
     count_result = await db.execute(

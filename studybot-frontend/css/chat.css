@@ -1,7 +1,7 @@
 .chat-page {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - var(--topnav-height));
+  height: calc(100dvh - var(--topnav-height));
 }
 
 /* ===== Input bar action buttons ===== */

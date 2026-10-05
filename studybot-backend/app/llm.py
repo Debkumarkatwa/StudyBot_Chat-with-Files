@@ -1,9 +1,13 @@
 import asyncio
-
-import httpx
-from groq import Groq
+from groq import Groq, RateLimitError, APIConnectionError, InternalServerError
+import logging
 
 from app.config import GROQ_API_KEY, HYBRID_MODE_ENABLED, GROQ_MODEL_NAME
+
+logger = logging.getLogger(__name__)
+
+class LLMUnavailableError(Exception):
+    """Groq is temporarily unreachable or rate-limited."""
 
 client = Groq(api_key=GROQ_API_KEY)
 
@@ -72,10 +76,6 @@ async def generate_answer(question: str, chunks_with_sources: list[tuple[str, st
             temperature=0.3,
         )
         return response.choices[0].message.content
-    except httpx.HTTPStatusError as exc:
-        status_code = getattr(exc.response, "status_code", None)
-        if status_code in {429, 500, 502, 503, 504}:
-            return "Sorry, the answer service is temporarily unavailable. Please try again in a moment."
-        raise
-    except Exception:
-        return "Sorry, the answer service is temporarily unavailable. Please try again in a moment."
+    except (RateLimitError, APIConnectionError, InternalServerError) as exc:
+        logger.warning("Groq unavailable: %s", exc)
+        raise LLMUnavailableError from exc

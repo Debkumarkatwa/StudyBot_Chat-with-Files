@@ -1,11 +1,11 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.user import User
 from app.dependencies import get_current_user
 from app.retrieval import retrieve_relevant_chunks
-from app.llm import generate_answer, is_hybrid_answer
+from app.llm import generate_answer, is_hybrid_answer, LLMUnavailableError
 from app.schemas.chat import ChatRequest, ChatResponse, SourceInfo
 from app.config import HYBRID_MODE_ENABLED
 
@@ -26,7 +26,13 @@ async def ask_question(
     )
 
     chunks_with_sources = [(chunk.content, filename) for chunk, filename in results]
-    answer = await generate_answer(payload.question, chunks_with_sources, effective_hybrid)
+    try:
+        answer = await generate_answer(payload.question, chunks_with_sources, effective_hybrid)
+    except LLMUnavailableError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="The AI service is temporarily unavailable. Please try again in a moment.",
+        ) from exc
     hybrid_used = effective_hybrid and is_hybrid_answer(answer)
 
     sources = [
